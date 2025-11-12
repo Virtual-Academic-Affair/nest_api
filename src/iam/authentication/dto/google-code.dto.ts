@@ -1,6 +1,6 @@
 import { IsNotEmpty } from 'class-validator';
 
-export class GoogleTokenDto {
+export class GoogleCodeDto {
   @IsNotEmpty()
-  token: string;
+  code: string;
 }
