@@ -9,10 +9,10 @@ export class User {
   @Column({ unique: true, nullable: false })
   email: string;
 
-  @Column({ unique: true, nullable: false })
-  googleId: string;
+  @Column({ unique: true, nullable: true })
+  googleId?: string;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   name: string;
 
   @Column({ enum: Role, default: Role.Student })
