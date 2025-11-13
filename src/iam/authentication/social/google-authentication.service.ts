@@ -10,6 +10,7 @@ import { AuthenticationService } from '../authentication.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
+import { Role } from 'src/users/enums/role.enum';
 
 @Injectable()
 export class GoogleAuthenticationService implements OnModuleInit {
@@ -36,18 +37,34 @@ export class GoogleAuthenticationService implements OnModuleInit {
         idToken: tokens.id_token,
       });
       const { email, sub: googleId, name, picture } = loginTicket.getPayload();
-      const user = await this.userRepository.findOneBy({ googleId });
+
+      // Find user by email first (Admin might have created it)
+      let user = await this.userRepository.findOne({ where: { email } });
+
       if (user) {
+        if (!user.googleId) {
+          user.googleId = googleId;
+        }
+        if (!user.name && name) {
+          user.name = name;
+        }
+        if (!user.picture && picture) {
+          user.picture = picture;
+        }
+        await this.userRepository.save(user);
         return this.authService.generateTokens(user);
-      } else {
-        const newUser = await this.userRepository.save({
-          email,
-          googleId,
-          name,
-          picture,
-        });
-        return this.authService.generateTokens(newUser);
       }
+
+      // User not exists - create new user with role Student (default)
+      const newUser = this.userRepository.create({
+        email,
+        googleId,
+        name,
+        picture,
+        role: Role.Student,
+      });
+      await this.userRepository.save(newUser);
+      return this.authService.generateTokens(newUser);
     } catch (err) {
       const pgUniqueViolationErrorCode = '23505';
       if (err.code === pgUniqueViolationErrorCode) {
