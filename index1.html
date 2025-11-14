@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gmail Module Tester</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body class="bg-base-200 min-h-screen p-6">
+    <div class="max-w-4xl mx-auto space-y-6">
+      <div class="card bg-base-100 shadow">
+        <div class="card-body grid gap-4 md:grid-cols-2">
+          <label class="form-control">
+            <span class="label-text font-semibold">API base URL</span>
+            <input
+              id="api-base"
+              class="input input-bordered"
+              value="http://localhost:3000"
+            />
+          </label>
+          <label class="form-control">
+            <span class="label-text font-semibold">OAuth redirect URI</span>
+            <input
+              id="redirect-uri"
+              class="input input-bordered"
+              value="http://127.0.0.1:5500/index1.html"
+            />
+          </label>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow">
+        <div class="card-body space-y-3 text-sm leading-6">
+          <h2 class="text-lg font-semibold">Quy trình</h2>
+          <ol class="list-decimal list-inside space-y-1">
+            <li>
+              Bấm <strong>Lấy URL đăng nhập</strong> → chọn đúng email giáo vụ
+              (đã có trong bảng <code>user</code> với role
+              <code>lecturer</code> hoặc <code>admin</code>).
+            </li>
+            <li>
+              Copy tham số <code>code</code> ở URL redirect và dán vào bước 2.
+            </li>
+            <li>
+              Sau khi gọi <strong>Đăng nhập Gmail</strong> thành công, trang sẽ
+              lưu Gmail session token. Các thao tác đọc mail, tạo tag, trả lời
+              về sau chỉ cần token này, không cần JWT IAM.
+            </li>
+          </ol>
+          <div class="alert alert-info text-xs">
+            <span>
+              Gmail session token do API trả về phải được gửi ở header
+              <code>Authorization: Bearer &lt;token&gt;</code> cho mọi request
+              phía dưới. Trang này sẽ tự thực hiện nếu bạn đăng nhập thành công.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow">
+        <div class="card-body space-y-4">
+          <h2 class="text-xl font-semibold">B1 – Xin quyền Gmail</h2>
+          <label class="form-control">
+            <span class="label-text">Tùy chọn state</span>
+            <input id="oauth-state" class="input input-bordered" />
+          </label>
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" id="force-consent" class="checkbox" />
+            <span class="label-text">
+              Bắt buộc hiện màn hình cấp quyền (dùng khi liên kết lần đầu hoặc
+              refresh token bị thu hồi)
+            </span>
+          </label>
+          <button id="btn-get-oauth" class="btn btn-primary w-full md:w-auto">
+            Lấy URL đăng nhập Google
+          </button>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow">
+        <div class="card-body space-y-4">
+          <h2 class="text-xl font-semibold">B2 – Đăng nhập Gmail module</h2>
+          <label class="form-control">
+            <span class="label-text">Code Google trả về</span>
+            <input id="oauth-code" class="input input-bordered" />
+          </label>
+          <button id="btn-login" class="btn btn-success w-full md:w-auto">
+            Đăng nhập Gmail
+          </button>
+          <div class="alert alert-success text-sm hidden" id="session-alert">
+            <div>
+              <p>
+                Đã đăng nhập với <span id="session-email" class="font-semibold"></span>
+              </p>
+              <p class="text-xs">
+                Token hết hạn sau <span id="session-exp"></span>. Bạn có thể dán
+                token ở nơi khác bằng nút bên dưới.
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button id="btn-copy-token" class="btn btn-xs btn-outline">
+                Copy token
+              </button>
+              <button
+                id="btn-refresh-session"
+                class="btn btn-xs btn-outline btn-primary"
+              >
+                Dùng token hiện tại đăng nhập lại
+              </button>
+              <button id="btn-logout" class="btn btn-xs btn-outline btn-error">
+                Đăng xuất Gmail module
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-6 md:grid-cols-2">
+        <div class="card bg-base-100 shadow">
+          <div class="card-body space-y-3">
+            <h2 class="text-lg font-semibold">Đọc email</h2>
+            <button id="btn-load-messages" class="btn btn-outline">
+              Lấy danh sách email
+            </button>
+            <pre
+              id="messages-output"
+              class="bg-base-200 rounded p-3 text-sm h-64 overflow-auto"
+            ></pre>
+          </div>
+        </div>
+
+        <div class="card bg-base-100 shadow">
+          <div class="card-body space-y-3">
+            <h2 class="text-lg font-semibold">Quản lý tag</h2>
+            <div class="flex gap-2 flex-wrap">
+              <button id="btn-load-tags" class="btn btn-outline flex-1">
+                Xem tag
+              </button>
+              <button id="btn-create-tag" class="btn btn-outline flex-1">
+                Tạo tag
+              </button>
+            </div>
+            <label class="form-control">
+              <span class="label-text">Tên tag mới</span>
+              <input id="tag-name" class="input input-bordered" />
+            </label>
+            <label class="form-control">
+              <span class="label-text">Message ID</span>
+              <input id="tag-message-id" class="input input-bordered" />
+            </label>
+            <label class="form-control">
+              <span class="label-text">Tag ID</span>
+              <input id="tag-id" class="input input-bordered" />
+            </label>
+            <button id="btn-assign-tag" class="btn btn-outline">
+              Gắn tag
+            </button>
+            <pre
+              id="tags-output"
+              class="bg-base-200 rounded p-3 text-sm h-64 overflow-auto"
+            ></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow">
+        <div class="card-body space-y-3">
+          <h2 class="text-lg font-semibold">Email đã lưu trong DB</h2>
+          <label class="form-control">
+            <span class="label-text">Limit</span>
+            <input
+              id="local-limit"
+              type="number"
+              class="input input-bordered"
+              value="20"
+            />
+          </label>
+          <label class="form-control">
+            <span class="label-text">Skip</span>
+            <input
+              id="local-skip"
+              type="number"
+              class="input input-bordered"
+              value="0"
+            />
+          </label>
+          <div class="flex flex-wrap gap-2">
+            <button id="btn-load-local" class="btn btn-outline">
+              Lấy email (pagination)
+            </button>
+            <button id="btn-load-local-all" class="btn btn-outline">
+              Lấy tất cả email đã lưu
+            </button>
+          </div>
+          <pre
+            id="local-output"
+            class="bg-base-200 rounded p-3 text-sm h-64 overflow-auto"
+          ></pre>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow">
+        <div class="card-body space-y-3">
+          <h2 class="text-lg font-semibold">Phản hồi email</h2>
+          <label class="form-control">
+            <span class="label-text">Thread ID</span>
+            <input id="reply-thread" class="input input-bordered" />
+          </label>
+          <label class="form-control">
+            <span class="label-text">Message-ID (tùy chọn)</span>
+            <input id="reply-message-id" class="input input-bordered" />
+          </label>
+          <label class="form-control">
+            <span class="label-text">Người nhận</span>
+            <input id="reply-to" class="input input-bordered" />
+          </label>
+          <label class="form-control">
+            <span class="label-text">Tiêu đề</span>
+            <input id="reply-subject" class="input input-bordered" />
+          </label>
+          <label class="form-control">
+            <span class="label-text">Nội dung</span>
+            <textarea
+              id="reply-body"
+              class="textarea textarea-bordered"
+              rows="4"
+            ></textarea>
+          </label>
+          <button id="btn-send-reply" class="btn btn-primary">
+            Gửi phản hồi
+          </button>
+          <pre
+            id="reply-output"
+            class="bg-base-200 rounded p-3 text-sm h-48 overflow-auto"
+          ></pre>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow">
+        <div class="card-body">
+          <h2 class="text-lg font-semibold mb-2">Log</h2>
+          <pre id="log-output" class="bg-base-200 rounded p-3 text-sm"></pre>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const apiBaseInput = document.getElementById('api-base');
+      const logOutput = document.getElementById('log-output');
+      const redirectInput = document.getElementById('redirect-uri');
+      let gmailToken = '';
+
+      const sessionAlert = document.getElementById('session-alert');
+      const sessionEmail = document.getElementById('session-email');
+      const sessionExp = document.getElementById('session-exp');
+      const copyTokenBtn = document.getElementById('btn-copy-token');
+      const logoutBtn = document.getElementById('btn-logout');
+      const refreshSessionBtn = document.getElementById('btn-refresh-session');
+      const SESSION_TOKEN_KEY = 'gmailSessionToken';
+      const SESSION_META_KEY = 'gmailSessionMeta';
+
+      const setLog = (data) => {
+        logOutput.textContent = JSON.stringify(data, null, 2);
+      };
+
+      const fetchJson = async (
+        path,
+        { method = 'GET', body, auth = true } = {},
+      ) => {
+        const apiBase = apiBaseInput.value.trim();
+        if (!apiBase) throw new Error('Chưa nhập API base URL');
+
+        const headers = { 'Content-Type': 'application/json' };
+        if (auth) {
+          if (!gmailToken) throw new Error('Chưa đăng nhập Gmail module');
+          headers.Authorization = `Bearer ${gmailToken}`;
+        }
+
+        const res = await fetch(`${apiBase}${path}`, {
+          method,
+          headers,
+          body,
+        });
+
+          const text = await res.text();
+          if (!res.ok) {
+            throw new Error(text || `HTTP ${res.status}`);
+          }
+          return text ? JSON.parse(text) : null;
+        };
+
+      const persistSession = (token, meta) => {
+        gmailToken = token;
+        localStorage.setItem(SESSION_TOKEN_KEY, token);
+        localStorage.setItem(SESSION_META_KEY, JSON.stringify(meta));
+        sessionAlert.classList.remove('hidden');
+        sessionEmail.textContent = meta.email ?? '';
+        sessionExp.textContent = meta.expiresIn ?? '';
+      };
+
+      const restoreSession = () => {
+        const storedToken = localStorage.getItem(SESSION_TOKEN_KEY);
+        if (!storedToken) return;
+        const metaRaw = localStorage.getItem(SESSION_META_KEY);
+        if (!metaRaw) return;
+        try {
+          const meta = JSON.parse(metaRaw);
+          persistSession(storedToken, meta);
+          setLog({ message: 'Khôi phục phiên Gmail từ localStorage', meta });
+        } catch (err) {
+          console.warn('Failed to parse Gmail session meta', err);
+        }
+      };
+
+      const clearSession = () => {
+        gmailToken = '';
+        localStorage.removeItem(SESSION_TOKEN_KEY);
+        localStorage.removeItem(SESSION_META_KEY);
+        sessionAlert.classList.add('hidden');
+      };
+
+      const loginWithCode = async (code) => {
+        try {
+          const data = await fetchJson('/gmail/login', {
+            method: 'POST',
+            body: JSON.stringify({ code }),
+            auth: false,
+          });
+          persistSession(data.token, {
+            email: data.account.email,
+            expiresIn: data.expiresIn,
+            savedAt: Date.now(),
+          });
+          setLog(data);
+        } catch (err) {
+          setLog({ error: err.message });
+        }
+      };
+
+      const callRefreshSession = async () => {
+        try {
+          const data = await fetchJson('/gmail/session/refresh', {
+            method: 'POST',
+          });
+          persistSession(data.token, {
+            email: data.account.email,
+            expiresIn: data.expiresIn,
+            savedAt: Date.now(),
+          });
+          setLog({
+            message: 'Đã làm mới session từ token hiện tại',
+            account: data.account,
+          });
+        } catch (err) {
+          clearSession();
+          setLog({ error: err.message });
+          alert(
+            'Session cũ không còn hợp lệ. Vui lòng đăng nhập lại bằng Google.',
+          );
+        }
+      };
+
+      document
+        .getElementById('btn-get-oauth')
+        .addEventListener('click', async () => {
+          try {
+            const state = document.getElementById('oauth-state').value.trim();
+            const forceConsent =
+              document.getElementById('force-consent').checked;
+            const params = new URLSearchParams();
+            if (state) params.set('state', state);
+            if (forceConsent) params.set('forceConsent', 'true');
+            const query = params.toString();
+            const data = await fetchJson(
+              `/gmail/oauth-url${query ? `?${query}` : ''}`,
+              { auth: false },
+            );
+            const redirectUri = redirectInput.value.trim();
+            if (redirectUri && !data.url.includes(redirectUri)) {
+              console.warn(
+                'Redirect URI trả về không trùng với input, kiểm tra cấu hình Google.',
+              );
+            }
+            window.open(data.url, '_blank');
+            setLog(data);
+          } catch (err) {
+            setLog({ error: err.message });
+          }
+        });
+
+      document
+        .getElementById('btn-login')
+        .addEventListener('click', () => {
+          const code = document.getElementById('oauth-code').value.trim();
+          if (!code) return alert('Chưa nhập code');
+          loginWithCode(code);
+        });
+
+      copyTokenBtn.addEventListener('click', async () => {
+        if (!gmailToken) return;
+        await navigator.clipboard.writeText(gmailToken);
+        alert('Đã copy Gmail token.');
+      });
+
+      logoutBtn.addEventListener('click', () => {
+        clearSession();
+        setLog({ message: 'Đã xoá token Gmail hiện tại' });
+      });
+
+      refreshSessionBtn.addEventListener('click', () => {
+        if (!gmailToken) {
+          alert('Chưa có session để làm mới');
+          return;
+        }
+        callRefreshSession();
+      });
+
+      const autoConsumeCode = () => {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        if (!code) return;
+        document.getElementById('oauth-code').value = code;
+        loginWithCode(code);
+        params.delete('code');
+        params.delete('scope');
+        const newUrl =
+          window.location.pathname +
+          (params.toString() ? `?${params.toString()}` : '');
+        window.history.replaceState({}, '', newUrl);
+      };
+
+      restoreSession();
+      autoConsumeCode();
+
+      document
+        .getElementById('btn-load-messages')
+        .addEventListener('click', async () => {
+          try {
+            const data = await fetchJson(`/gmail/messages`);
+            document.getElementById('messages-output').textContent =
+              JSON.stringify(data, null, 2);
+            setLog(data);
+          } catch (err) {
+            setLog({ error: err.message });
+          }
+        });
+
+      document
+        .getElementById('btn-load-tags')
+        .addEventListener('click', async () => {
+          try {
+            const data = await fetchJson('/gmail/tags');
+            document.getElementById('tags-output').textContent =
+              JSON.stringify(data, null, 2);
+            setLog(data);
+          } catch (err) {
+            setLog({ error: err.message });
+          }
+        });
+
+      document
+        .getElementById('btn-load-local')
+        .addEventListener('click', async () => {
+          try {
+            const data = await fetchJson(`/gmail/email`);
+            document.getElementById('local-output').textContent =
+              JSON.stringify(data, null, 2);
+            setLog({ message: 'Fetched stored emails', count: data.length });
+          } catch (err) {
+            setLog({ error: err.message });
+          }
+        });
+
+      document
+        .getElementById('btn-load-local-all')
+        .addEventListener('click', async () => {
+          try {
+            const data = await fetchJson(`/gmail/emailAll`);
+            document.getElementById('local-output').textContent =
+              JSON.stringify(data, null, 2);
+            setLog({
+              message: 'Fetched all stored emails',
+              count: data.length,
+            });
+          } catch (err) {
+            setLog({ error: err.message });
+          }
+        });
+
+      document
+        .getElementById('btn-create-tag')
+        .addEventListener('click', async () => {
+          const name = document.getElementById('tag-name').value.trim();
+          if (!name) return alert('Nhập tên tag');
+          try {
+            const data = await fetchJson('/gmail/tags', {
+              method: 'POST',
+              body: JSON.stringify({ name }),
+            });
+            setLog(data);
+            document.getElementById('btn-load-tags').click();
+          } catch (err) {
+            setLog({ error: err.message });
+          }
+        });
+
+      document
+        .getElementById('btn-assign-tag')
+        .addEventListener('click', async () => {
+          const messageId = document
+            .getElementById('tag-message-id')
+            .value.trim();
+          const tagId = document.getElementById('tag-id').value.trim();
+          if (!messageId || !tagId) {
+            return alert('Nhập messageId và tagId');
+          }
+          try {
+            const data = await fetchJson('/gmail/tags/assign', {
+              method: 'POST',
+              body: JSON.stringify({ messageId, tagId }),
+            });
+            setLog(data);
+          } catch (err) {
+            setLog({ error: err.message });
+          }
+        });
+
+      document
+        .getElementById('btn-send-reply')
+        .addEventListener('click', async () => {
+          const payload = {
+            threadId: document.getElementById('reply-thread').value.trim(),
+            messageId: document.getElementById('reply-message-id').value.trim(),
+            to: document.getElementById('reply-to').value.trim(),
+            subject: document.getElementById('reply-subject').value.trim(),
+            body: document.getElementById('reply-body').value,
+          };
+          if (!payload.threadId || !payload.to) {
+            return alert('threadId và email người nhận là bắt buộc');
+          }
+          try {
+            const data = await fetchJson('/gmail/messages/reply', {
+              method: 'POST',
+              body: JSON.stringify(payload),
+            });
+            document.getElementById('reply-output').textContent =
+              JSON.stringify(data, null, 2);
+            setLog(data);
+          } catch (err) {
+            setLog({ error: err.message });
+          }
+        });
+    </script>
+  </body>
+</html>
