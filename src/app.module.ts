@@ -6,6 +6,7 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { IamModule } from './iam/iam.module';
 import { ConfigModule } from '@nestjs/config';
 import { ExampleResourceModule } from './exampleResource/exampleResource.module';
+import { GmailModule } from './gmail/gmail.module';
 import { DatabaseType } from 'typeorm';
 
 @Module({
@@ -24,6 +25,7 @@ import { DatabaseType } from 'typeorm';
       synchronize: true,
     } as TypeOrmModuleOptions),
     IamModule,
+    GmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
