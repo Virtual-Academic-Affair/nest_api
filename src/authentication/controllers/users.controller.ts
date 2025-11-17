@@ -1,16 +1,34 @@
-import { Controller } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { UsersService } from '../services/users.service';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Auth } from '@shared/authentication/decorators/auth.decorator';
 import { AuthType } from '@shared/authentication/enums/auth-type.enum';
+import { AssignRoleDto } from '../dto/assign-role.dto';
+import { BaseResourceController } from '@shared/controllers/base-resource.controller';
+import { User } from '../entities/user.entity';
+import { UsersQueryDto } from '../dto/users/query.dto';
+import { CreateUserDto } from '../dto/users/create.dto';
+import { UpdateUserDto } from '../dto/users/update.dto';
 import { Roles } from '@shared/authorization/decorators/roles.decorator';
 import { Role } from '@shared/authorization/enums/role.enum';
 
-@ApiTags('Users')
-@ApiBearerAuth('jwt')
 @Auth(AuthType.Bearer)
 @Roles(Role.Admin)
 @Controller('users')
-export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+export class UsersController extends BaseResourceController<User> {
+  constructor(private readonly usersService: UsersService) {
+    super(usersService);
+  }
+
+  protected getDtoClasses() {
+    return {
+      query: UsersQueryDto,
+      create: CreateUserDto,
+      update: UpdateUserDto,
+    };
+  }
+
+  @Post('assign-role')
+  assignRole(@Body() assignRoleDto: AssignRoleDto) {
+    return this.usersService.assignRole(assignRoleDto);
+  }
 }
