@@ -11,6 +11,7 @@ import {
 import { BaseResourceService } from '../services/base-resource.service';
 import { BaseQueryDto } from '../dto/base-query.dto';
 import { ObjectLiteral } from 'typeorm';
+import { validateDto } from '../utils/validate-dto.util';
 
 export abstract class BaseResourceController<T extends ObjectLiteral> {
   protected constructor(protected readonly service: BaseResourceService<T>) {}
@@ -21,14 +22,16 @@ export abstract class BaseResourceController<T extends ObjectLiteral> {
     // update: new () => any;
   };
 
-  protected dto(key: 'query' | 'create' | 'update', data: any) {
-    const DtoClass = this.getDtoClasses()[key];
-    return Object.assign(new DtoClass(), data);
+  protected async dto(key: 'query' | 'create' | 'update', data: any) {
+    const DtoClass = this.getDtoClasses()[key] as new () => any;
+    return validateDto(DtoClass, data);
   }
 
   @Get()
-  findAll(@Query() queryDto: BaseQueryDto) {
-    return this.service.findAll(this.dto('query', queryDto));
+  async findAll(@Query() queryDto: BaseQueryDto) {
+    return this.service.findAll(
+      (await this.dto('query', queryDto)) as BaseQueryDto,
+    );
   }
 
   @Get(':id')
@@ -37,13 +40,13 @@ export abstract class BaseResourceController<T extends ObjectLiteral> {
   }
 
   @Post()
-  create(@Body() createDto: any) {
-    return this.service.create(this.dto('create', createDto));
+  async create(@Body() createDto: any) {
+    return this.service.create(await this.dto('create', createDto));
   }
 
   @Put(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: any) {
-    return this.service.update(id, this.dto('update', updateDto));
+  async update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: any) {
+    return this.service.update(id, await this.dto('update', updateDto));
   }
 
   @Delete(':id')

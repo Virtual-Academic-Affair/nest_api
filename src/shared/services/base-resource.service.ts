@@ -10,8 +10,8 @@ export abstract class BaseResourceService<T extends ObjectLiteral> {
   protected abstract orderableColumns: string[];
 
   async findAll(queryDto: BaseQueryDto) {
-    const page = Math.max(1, Number(queryDto.page) || 1);
-    const limit = Math.min(Math.max(1, Number(queryDto.limit) || 10), 20);
+    const page = Math.max(queryDto.page || 1);
+    const limit = Math.min(Math.max(1, queryDto.limit), 20);
 
     const { keyword, order_col = 'id', order_dir = 'ASC' } = queryDto;
     const skip = (page - 1) * Math.min(limit, 20);
@@ -58,12 +58,12 @@ export abstract class BaseResourceService<T extends ObjectLiteral> {
     });
   }
 
-  async create(createDto: Partial<T>) {
+  async create(createDto: object) {
     const entity = this.repository.create(createDto as any);
     return await this.repository.save(entity);
   }
 
-  async update(id: number, updateDto: Partial<T>) {
+  async update(id: number, updateDto: object) {
     const entity = await this.findOne(id);
     Object.assign(entity, updateDto);
     return await this.repository.save(entity);

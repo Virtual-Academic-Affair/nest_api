@@ -12,7 +12,7 @@ export class User {
   @Column({ unique: true, nullable: true })
   googleId?: string;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   name: string;
 
   @Column({ enum: Role, default: Role.Student })
