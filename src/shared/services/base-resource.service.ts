@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ObjectLiteral, Repository, SelectQueryBuilder } from 'typeorm';
 import { BaseQueryDto } from '../dto/base-query.dto';
 
@@ -44,18 +44,20 @@ export abstract class BaseResourceService<T extends ObjectLiteral> {
     return {
       items,
       pagination: {
-        total: Number(total),
+        total,
         currentPage: page,
-        limit: limit,
+        limit,
         totalPages: Math.ceil(total / limit),
       },
     };
   }
 
   async findOne(id: number) {
-    return await this.repository.findOneOrFail({
-      where: { id } as any,
-    });
+    const item = await this.repository.findOne({ where: { id } as any });
+    if (!item) {
+      throw new NotFoundException();
+    }
+    return item;
   }
 
   async create(createDto: object) {
