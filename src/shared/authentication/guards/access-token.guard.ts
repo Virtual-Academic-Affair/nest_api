@@ -10,6 +10,10 @@ import { JwtService } from '@nestjs/jwt';
 import jwtConfig from '@shared/config/jwt.config';
 import { Request } from 'express';
 import { REQUEST_USER_KEY } from '@shared/shared.constants';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '@authentication/entities/user.entity';
+import { Role } from '@shared/authorization/enums/role.enum';
 
 @Injectable()
 export class AccessTokenGuard implements CanActivate {
@@ -17,6 +21,8 @@ export class AccessTokenGuard implements CanActivate {
     private readonly jwtService: JwtService,
     @Inject(jwtConfig.KEY)
     private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -25,14 +31,26 @@ export class AccessTokenGuard implements CanActivate {
     if (!token) {
       throw new UnauthorizedException();
     }
-    try {
-      request[REQUEST_USER_KEY] = await this.jwtService.verifyAsync(
-        token,
-        this.jwtConfiguration,
-      );
-    } catch (err) {
-      throw new UnauthorizedException();
+    const payload = await this.jwtService.verifyAsync(
+      token,
+      this.jwtConfiguration,
+    );
+
+    const user = await this.usersRepository.findOneBy({ id: payload.sub });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
     }
+
+    if (user.role !== Role.Admin) {
+      throw new UnauthorizedException('Only admin users are allowed');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('User is not active');
+    }
+
+    request[REQUEST_USER_KEY] = payload;
     return true;
   }
 
