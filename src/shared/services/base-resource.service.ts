@@ -10,13 +10,10 @@ export abstract class BaseResourceService<T extends ObjectLiteral> {
   protected abstract orderableColumns: string[];
 
   async findAll(queryDto: BaseQueryDto) {
-    const {
-      page = 1,
-      limit = 10,
-      keyword,
-      order_col = 'id',
-      order_dir = 'ASC',
-    } = queryDto;
+    const page = Math.max(1, Number(queryDto.page) || 1);
+    const limit = Math.min(Math.max(1, Number(queryDto.limit) || 10), 20);
+
+    const { keyword, order_col = 'id', order_dir = 'ASC' } = queryDto;
     const skip = (page - 1) * Math.min(limit, 20);
 
     const queryBuilder = this.repository.createQueryBuilder(this.entityName);
@@ -42,14 +39,14 @@ export abstract class BaseResourceService<T extends ObjectLiteral> {
       .skip(skip)
       .take(limit);
 
-    const [data, total] = await queryBuilder.getManyAndCount();
+    const [items, total] = await queryBuilder.getManyAndCount();
 
     return {
-      data,
+      items,
       pagination: {
-        total,
-        page,
-        limit,
+        total: Number(total),
+        currentPage: page,
+        limit: limit,
         totalPages: Math.ceil(total / limit),
       },
     };

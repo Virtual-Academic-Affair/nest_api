@@ -13,7 +13,7 @@ import { RestrictMethods } from '@shared/decorators/restrict-methods.decorator';
 
 @Auth(AuthType.Bearer)
 @Roles(Role.Admin)
-@Controller('users')
+@Controller('authentication/users')
 @RestrictMethods({ except: ['delete', 'create'] })
 export class UsersController extends BaseResourceController<User> {
   constructor(private readonly usersService: UsersService) {
