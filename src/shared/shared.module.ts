@@ -2,19 +2,15 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '../users/entities/user.entity';
-import { AuthenticationController } from './authentication/authentication.controller';
-import { AuthenticationService } from './authentication/authentication.service';
+import { User } from '../authentication/entities/user.entity';
+import { AuthenticationService } from '../authentication/services/authentication.service';
 import jwtConfig from './config/jwt.config';
 import { BcryptService } from './hashing/bcrypt.service';
 import { HashingService } from './hashing/hashing.service';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthenticationGuard } from './authentication/guards/authentication.guard';
 import { AccessTokenGuard } from './authentication/guards/access-token.guard';
-import { RefreshTokenIdsStorage } from './authentication/refresh-token-ids.storage';
 import { RolesGuard } from './authorization/guard/roles.guard';
-import { GoogleAuthenticationService } from './authentication/social/google-authentication.service';
-import { GoogleAuthenticationController } from './authentication/social/google-authentication.controller';
 
 @Module({
   imports: [
@@ -34,9 +30,6 @@ import { GoogleAuthenticationController } from './authentication/social/google-a
     },
     AuthenticationService,
     AccessTokenGuard,
-    RefreshTokenIdsStorage,
-    GoogleAuthenticationService,
   ],
-  controllers: [AuthenticationController, GoogleAuthenticationController],
 })
-export class IamModule {}
+export class SharedModule {}

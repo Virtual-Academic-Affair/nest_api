@@ -1,7 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { Auth } from '../decorators/auth.decorator';
-import { AuthType } from '../enums/auth-type.enum';
-import { GoogleAuthenticationService } from './google-authentication.service';
+import { Auth } from '../../shared/authentication/decorators/auth.decorator';
+import { AuthType } from '../../shared/authentication/enums/auth-type.enum';
+import { GoogleAuthenticationService } from '../services/google-authentication.service';
 import { GoogleCodeDto } from '../dto/google-code.dto';
 import { ApiTags } from '@nestjs/swagger';
 
