@@ -6,7 +6,6 @@ import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import jwtConfig from '@shared/config/jwt.config';
 import { ActiveUserData } from '@shared/interfaces/active-user-data.interface';
-import { randomUUID } from 'crypto';
 
 @Injectable()
 export class AuthenticationService {
@@ -18,20 +17,13 @@ export class AuthenticationService {
   ) {}
 
   async generateTokens(user: User) {
-    const refreshTokenId = randomUUID();
-    const [accessToken, refreshToken] = await Promise.all([
-      this.signToken<Partial<ActiveUserData>>(
-        user.id,
-        this.jwtConfiguration.accessTokenTtl,
-        { email: user.email, role: user.role },
-      ),
-      this.signToken(user.id, this.jwtConfiguration.refreshTokenTtl, {
-        refreshTokenId,
-      }),
-    ]);
+    const accessToken = await this.signToken<Partial<ActiveUserData>>(
+      user.id,
+      this.jwtConfiguration.accessTokenTtl,
+      { email: user.email, role: user.role },
+    );
     return {
       accessToken,
-      refreshToken,
     };
   }
 

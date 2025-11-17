@@ -34,7 +34,6 @@ The project is organized into two main modules:
 - [TypeORM](https://typeorm.io/#/) as ORM
 - [Docker](https://www.docker.com/) for containerization
 - [PostgreSQL](https://www.postgresql.org/) as database
-- [Redis](https://redis.io/) for refresh token management
 - [Swagger](https://swagger.io/) for API documentation
 - [JWT](https://jwt.io/) for authorization
 
