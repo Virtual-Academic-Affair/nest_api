@@ -10,6 +10,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthenticationGuard } from './authentication/guards/authentication.guard';
 import { AccessTokenGuard } from './authentication/guards/access-token.guard';
 import { RolesGuard } from './authorization/guard/roles.guard';
+import { RestrictMethodsGuard } from './guards/restrict-methods.guard';
 
 @Module({
   imports: [
@@ -26,6 +27,10 @@ import { RolesGuard } from './authorization/guard/roles.guard';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RestrictMethodsGuard,
     },
     AccessTokenGuard,
   ],
