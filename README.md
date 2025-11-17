@@ -34,7 +34,6 @@ The project is organized into two main modules:
 - [TypeORM](https://typeorm.io/#/) as ORM
 - [Docker](https://www.docker.com/) for containerization
 - [PostgreSQL](https://www.postgresql.org/) as database
-- [Swagger](https://swagger.io/) for API documentation
 - [JWT](https://jwt.io/) for authorization
 
 ## How to
@@ -82,12 +81,6 @@ authenticated user.
 - Both the `@Auth()` and `@Roles()` decorators can be used on the same route.
 - Both decorators can be used on a controller or route level. You can also make the whole controller private and
   override one route to make it public.
-
-## Documentation
-
-```bash
-http://localhost:3000/api
-```
 
 ## Installation
 
