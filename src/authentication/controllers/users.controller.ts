@@ -6,14 +6,15 @@ import { AssignRoleDto } from '../dto/assign-role.dto';
 import { BaseResourceController } from '@shared/controllers/base-resource.controller';
 import { User } from '../entities/user.entity';
 import { UsersQueryDto } from '../dto/users/query.dto';
-import { CreateUserDto } from '../dto/users/create.dto';
 import { UpdateUserDto } from '../dto/users/update.dto';
 import { Roles } from '@shared/authorization/decorators/roles.decorator';
 import { Role } from '@shared/authorization/enums/role.enum';
+import { RestrictMethods } from '@shared/decorators/restrict-methods.decorator';
 
 @Auth(AuthType.Bearer)
 @Roles(Role.Admin)
 @Controller('users')
+@RestrictMethods({ except: ['delete', 'create'] })
 export class UsersController extends BaseResourceController<User> {
   constructor(private readonly usersService: UsersService) {
     super(usersService);
@@ -22,7 +23,6 @@ export class UsersController extends BaseResourceController<User> {
   protected getDtoClasses() {
     return {
       query: UsersQueryDto,
-      create: CreateUserDto,
       update: UpdateUserDto,
     };
   }

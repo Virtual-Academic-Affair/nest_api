@@ -5,7 +5,6 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { HttpMethod } from '../enums/http-method.enum';
 import {
   RESTRICT_METHODS_KEY,
   RestrictMethodsOptions,
@@ -13,14 +12,6 @@ import {
 
 @Injectable()
 export class RestrictMethodsGuard implements CanActivate {
-  private readonly httpMethodMap: Record<string, HttpMethod> = {
-    GET: HttpMethod.Read,
-    POST: HttpMethod.Create,
-    PUT: HttpMethod.Update,
-    PATCH: HttpMethod.Patch,
-    DELETE: HttpMethod.Delete,
-  };
-
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -31,28 +22,26 @@ export class RestrictMethodsGuard implements CanActivate {
 
     if (!options) return true;
 
-    const request = context.switchToHttp().getRequest();
-    const method = this.httpMethodMap[request.method];
-
-    if (!method) throw new ForbiddenException();
+    const handler = context.getHandler();
+    const methodName = handler.name;
 
     if (options.only?.length) {
-      return this.checkAllowOnly(method, options.only);
+      return this.checkAllowOnly(methodName, options.only);
     }
 
     if (options.except?.length) {
-      return this.checkExcept(method, options.except);
+      return this.checkExcept(methodName, options.except);
     }
 
     return true;
   }
 
-  private checkAllowOnly(current: HttpMethod, allowed: HttpMethod[]): boolean {
+  private checkAllowOnly(current: string, allowed: string[]): boolean {
     if (!allowed.includes(current)) throw new ForbiddenException();
     return true;
   }
 
-  private checkExcept(current: HttpMethod, denied: HttpMethod[]): boolean {
+  private checkExcept(current: string, denied: string[]): boolean {
     if (denied.includes(current)) throw new ForbiddenException();
     return true;
   }

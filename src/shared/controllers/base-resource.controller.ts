@@ -16,14 +16,12 @@ export abstract class BaseResourceController<T extends ObjectLiteral> {
   protected constructor(protected readonly service: BaseResourceService<T>) {}
 
   protected abstract getDtoClasses(): {
-    query: new () => BaseQueryDto;
-    create: new () => any;
-    update: new () => any;
+    // query: new () => BaseQueryDto;
+    // create: new () => any;
+    // update: new () => any;
   };
 
-  protected dto<
-    K extends keyof ReturnType<BaseResourceController<T>['getDtoClasses']>,
-  >(key: K, data: any) {
+  protected dto(key: 'query' | 'create' | 'update', data: any) {
     const DtoClass = this.getDtoClasses()[key];
     return Object.assign(new DtoClass(), data);
   }
