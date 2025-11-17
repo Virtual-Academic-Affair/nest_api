@@ -2,9 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '../authentication/entities/user.entity';
-import { AuthenticationService } from '../authentication/services/authentication.service';
-import jwtConfig from './config/jwt.config';
+import { User } from '@authentication/entities/user.entity';
+import jwtConfig from '@shared/config/jwt.config';
 import { BcryptService } from './hashing/bcrypt.service';
 import { HashingService } from './hashing/hashing.service';
 import { APP_GUARD } from '@nestjs/core';
@@ -28,8 +27,8 @@ import { RolesGuard } from './authorization/guard/roles.guard';
       provide: APP_GUARD,
       useClass: RolesGuard,
     },
-    AuthenticationService,
     AccessTokenGuard,
   ],
+  exports: [JwtModule, TypeOrmModule, HashingService],
 })
 export class SharedModule {}

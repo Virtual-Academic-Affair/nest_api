@@ -9,7 +9,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { AuthenticationService } from './authentication.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from 'src/authentication/entities/user.entity';
+import { User } from '@authentication/entities/user.entity';
 
 @Injectable()
 export class GoogleAuthenticationService implements OnModuleInit {

@@ -1,4 +1,4 @@
-import { Role } from 'src/shared/authorization/enums/role.enum';
+import { Role } from '@shared/authorization/enums/role.enum';
 
 export interface ActiveUserData {
   /**

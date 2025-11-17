@@ -4,8 +4,8 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
-import jwtConfig from '../../shared/config/jwt.config';
-import { ActiveUserData } from '../../shared/interfaces/active-user-data.interface';
+import jwtConfig from '@shared/config/jwt.config';
+import { ActiveUserData } from '@shared/interfaces/active-user-data.interface';
 import { randomUUID } from 'crypto';
 
 @Injectable()

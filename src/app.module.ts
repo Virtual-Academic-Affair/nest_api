@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthenticationModule } from './authentication/users.module';
+import { AuthenticationModule } from './authentication/authentication.module';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { SharedModule } from './shared/iam.module';
+import { SharedModule } from './shared/shared.module';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseType } from 'typeorm';
 
