@@ -20,11 +20,9 @@ export class UsersService extends BaseResourceService<User> {
 
   protected applyCustomFilters(
     queryBuilder: SelectQueryBuilder<User>,
-    queryDto: UsersQueryDto,
+    { role }: UsersQueryDto,
   ): void {
-    if (queryDto.role) {
-      queryBuilder.andWhere('user.role = :role', { role: queryDto.role });
-    }
+    role && queryBuilder.andWhere('user.role = :role', { role });
   }
 
   async assignRole(assignRoleDto: AssignRoleDto) {
