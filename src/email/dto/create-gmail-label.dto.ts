@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class CreateGmailTagDto {
+export class CreateGmailLabelDto {
   @IsString()
   @IsNotEmpty()
   name: string;

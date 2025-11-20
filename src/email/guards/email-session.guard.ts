@@ -5,8 +5,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { GmailService } from '../gmail.service';
-import { GmailAccount } from '../entities/gmail-account.entity';
+import { GmailService } from '../email.service';
+import { GmailAccount } from '../entities/email-account.entity';
 
 declare module 'express' {
   interface Request {

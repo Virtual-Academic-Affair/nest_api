@@ -9,8 +9,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
-import { GmailTag } from './gmail-tag.entity';
-import { GmailEmail } from './gmail-email.entity';
+import { GmailLabel } from './email-label.entity';
+import { GmailEmail } from './email-email.entity';
 
 @Entity()
 @Unique(['email'])
@@ -34,8 +34,11 @@ export class GmailAccount {
   @ManyToOne(() => User, { eager: true })
   user: User;
 
-  @OneToMany(() => GmailTag, (tag) => tag.gmailAccount)
-  tags: GmailTag[];
+  @Column({ type: 'timestamptz', nullable: true })
+  lastPulledAt?: Date;
+
+  @OneToMany(() => GmailLabel, (label) => label.gmailAccount)
+  labels: GmailLabel[];
 
   @OneToMany(() => GmailEmail, (email) => email.gmailAccount)
   emails: GmailEmail[];

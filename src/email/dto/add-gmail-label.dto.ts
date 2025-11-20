@@ -1,11 +1,11 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class AddGmailTagDto {
+export class AddGmailLabelDto {
   @IsString()
   @IsNotEmpty()
   messageId: string;
 
   @IsString()
   @IsNotEmpty()
-  tagId: string;
+  labelId: string;
 }

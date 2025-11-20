@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
@@ -6,12 +7,13 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { IamModule } from './iam/iam.module';
 import { ConfigModule } from '@nestjs/config';
 import { ExampleResourceModule } from './exampleResource/exampleResource.module';
-import { GmailModule } from './gmail/gmail.module';
+import { GmailModule } from './email/email.module';
 import { DatabaseType } from 'typeorm';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
+    ScheduleModule.forRoot(),
     ExampleResourceModule,
     UsersModule,
     TypeOrmModule.forRoot({

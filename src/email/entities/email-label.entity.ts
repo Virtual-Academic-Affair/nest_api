@@ -8,22 +8,22 @@ import {
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
-import { GmailAccount } from './gmail-account.entity';
-import { GmailEmail } from './gmail-email.entity';
+import { GmailAccount } from './email-account.entity';
+import { GmailEmail } from './email-email.entity';
 
 @Entity()
-@Unique(['gmailAccount', 'gmailTagId'])
-export class GmailTag {
+@Unique(['gmailAccount', 'gmailLabelId'])
+export class GmailLabel {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => GmailAccount, (account) => account.tags, {
+  @ManyToOne(() => GmailAccount, (account) => account.labels, {
     onDelete: 'CASCADE',
   })
   gmailAccount: GmailAccount;
 
   @Column()
-  gmailTagId: string;
+  gmailLabelId: string;
 
   @Column()
   name: string;
@@ -34,7 +34,7 @@ export class GmailTag {
   @Column({ nullable: true })
   color?: string;
 
-  @ManyToMany(() => GmailEmail, (email) => email.tags)
+  @ManyToMany(() => GmailEmail, (email) => email.labels)
   emails: GmailEmail[];
 
   @CreateDateColumn()

@@ -5,6 +5,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,14 +14,14 @@ import { google, gmail_v1 } from 'googleapis';
 import { In, Repository } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { Role } from 'src/users/enums/role.enum';
-import { AddGmailTagDto } from './dto/add-gmail-tag.dto';
-import { CreateGmailTagDto } from './dto/create-gmail-tag.dto';
+import { AddGmailLabelDto } from './dto/add-gmail-label.dto';
+import { CreateGmailLabelDto } from './dto/create-gmail-label.dto';
 import { ListMessagesQueryDto } from './dto/list-messages-query.dto';
 import { RegisterGmailAccountDto } from './dto/register-gmail-account.dto';
 import { ReplyMailDto } from './dto/reply-mail.dto';
-import { GmailAccount } from './entities/gmail-account.entity';
-import { GmailTag } from './entities/gmail-tag.entity';
-import { GmailEmail } from './entities/gmail-email.entity';
+import { GmailAccount } from './entities/email-account.entity';
+import { GmailLabel } from './entities/email-label.entity';
+import { GmailEmail } from './entities/email-email.entity';
 
 const GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.modify'];
 
@@ -34,8 +35,8 @@ export class GmailService {
     private readonly configService: ConfigService,
     @InjectRepository(GmailAccount)
     private readonly gmailAccountRepo: Repository<GmailAccount>,
-    @InjectRepository(GmailTag)
-    private readonly gmailTagRepo: Repository<GmailTag>,
+    @InjectRepository(GmailLabel)
+    private readonly gmailLabelRepo: Repository<GmailLabel>,
     @InjectRepository(GmailEmail)
     private readonly gmailEmailRepo: Repository<GmailEmail>,
     @InjectRepository(User)
@@ -91,7 +92,7 @@ export class GmailService {
 
     if (
       !user ||
-      ![Role.Admin, Role.Lecture].includes(user.role as Role)
+      ![Role.Admin].includes(user.role as Role)
     ) {
       throw new ForbiddenException(
         'Email này chưa được cấp quyền sử dụng module Gmail.',
@@ -190,31 +191,31 @@ export class GmailService {
     return account;
   }
 
-  async getTags(account: GmailAccount) {
+  async getLabels(account: GmailAccount) {
     const client = await this.getClient(account);
     const { data } = await client.users.labels.list({ userId: 'me' });
     const labels = data.labels ?? [];
-    await this.upsertTags(account, labels);
+    await this.upsertLabels(account, labels);
     return labels;
   }
 
-  async getTagsForEmail(account: GmailAccount, messageId: string) {
+  async getLabelsForEmail(account: GmailAccount, messageId: string) {
     const email = await this.gmailEmailRepo.findOne({
       where: {
         gmailAccount: { id: account.id },
         gmailMessageId: messageId,
       },
-      relations: ['tags'],
+      relations: ['labels'],
     });
 
     if (!email) {
       throw new NotFoundException('Không tìm thấy email với messageId này.');
     }
 
-    return email.tags ?? [];
+    return email.labels ?? [];
   }
 
-  async createTag(account: GmailAccount, dto: CreateGmailTagDto) {
+  async createLabel(account: GmailAccount, dto: CreateGmailLabelDto) {
     const client = await this.getClient(account);
     const { data } = await client.users.labels.create({
       userId: 'me',
@@ -225,33 +226,33 @@ export class GmailService {
       },
     });
     if (data) {
-      await this.upsertTags(account, [data]);
+      await this.upsertLabels(account, [data]);
     }
     return data;
   }
 
-  async addTagToMail(account: GmailAccount, dto: AddGmailTagDto) {
+  async addLabelToMail(account: GmailAccount, dto: AddGmailLabelDto) {
     const client = await this.getClient(account);
     const { data } = await client.users.messages.modify({
       userId: 'me',
       id: dto.messageId,
       requestBody: {
-        addLabelIds: [dto.tagId],
+        addLabelIds: [dto.labelId],
       },
     });
 
-    const tag = await this.ensureTag(account, dto.tagId);
-    if (tag) {
+    const label = await this.ensureLabel(account, dto.labelId);
+    if (label) {
       const email = await this.gmailEmailRepo.findOne({
         where: { gmailMessageId: dto.messageId },
-        relations: ['tags'],
+        relations: ['labels'],
       });
       if (email) {
-        const tagExists = email.tags?.some(
-          (existing) => existing.id === tag.id,
+        const labelExists = email.labels?.some(
+          (existing) => existing.id === label.id,
         );
-        if (!tagExists) {
-          email.tags = [...(email.tags ?? []), tag];
+        if (!labelExists) {
+          email.labels = [...(email.labels ?? []), label];
           await this.gmailEmailRepo.save(email);
         }
       }
@@ -261,131 +262,42 @@ export class GmailService {
   }
 
   async readAllMails(account: GmailAccount, query: ListMessagesQueryDto) {
-    const client = await this.getClient(account);
-    const twoDaysAgo = new Date();
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    return this.pullEmailsFromGmail(account);
+  }
 
-    const queryString = `-from:me newer_than:2d`;
-    const collectedMessages: gmail_v1.Schema$Message[] = [];
-    let pageToken: string | undefined;
-
-    do {
-      const { data } = await client.users.messages.list({
-        userId: 'me',
-        maxResults: 100,
-        q: queryString,
-        pageToken,
-      });
-
-      if (data.messages?.length) {
-        collectedMessages.push(...data.messages);
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async autoPullEmails() {
+    const accounts = await this.gmailAccountRepo.find();
+    for (const account of accounts) {
+      try {
+        await this.pullEmailsFromGmail(account);
+      } catch (error) {
+        const reason = error instanceof Error ? error.stack ?? error.message : String(error);
+        this.logger.error(
+          `Failed to pull Gmail messages for account ${account.id}`,
+          reason,
+        );
       }
-
-      pageToken = data.nextPageToken ?? undefined;
-    } while (pageToken);
-
-    if (!collectedMessages.length) {
-      return [];
     }
-
-    const newMessageIds = collectedMessages
-      .map((message) => message.id)
-      .filter((id): id is string => !!id);
-
-    const alreadyFetched = await this.gmailEmailRepo.find({
-      select: ['gmailMessageId'],
-      where: {
-        gmailAccount: { id: account.id },
-        gmailMessageId: In(newMessageIds),
-      },
-    });
-
-    const alreadyFetchedIds = new Set(
-      alreadyFetched.map((email) => email.gmailMessageId),
-    );
-
-    const filteredMessages = collectedMessages.filter(
-      (message) => !!message.id && !alreadyFetchedIds.has(message.id),
-    );
-
-    if (!filteredMessages.length) {
-      return [];
-    }
-
-    const { data: labelsData } = await client.users.labels.list({
-      userId: 'me',
-    });
-    const tagMap = await this.upsertTags(account, labelsData.labels ?? []);
-
-    const details = await Promise.all(
-      filteredMessages.map(async (message) => {
-        const { data: messageData } = await client.users.messages.get({
-          userId: 'me',
-          id: message.id,
-          format: 'full',
-        });
-
-        const internalDate = messageData.internalDate
-          ? new Date(Number(messageData.internalDate))
-          : undefined;
-
-        if (internalDate && internalDate < twoDaysAgo) {
-          return null;
-        }
-
-        const headers = this.extractHeaders(messageData.payload?.headers);
-        const senderInfo = this.parseEmailAddress(headers['From']);
-        const receiverInfo = this.parseEmailAddress(headers['To']);
-        const content = this.extractPlainText(messageData.payload);
-        const parentEmailId =
-          headers['In-Reply-To'] ?? headers['References'] ?? undefined;
-        const messageIdHeader =
-          headers['Message-ID'] ??
-          headers['Message-Id'] ??
-          headers['message-id'];
-
-        return {
-          id: messageData.id,
-          threadId: messageData.threadId,
-          snippet: messageData.snippet,
-          headers,
-          payload: messageData.payload,
-          labelIds: messageData.labelIds,
-          internalDate: messageData.internalDate,
-          senderName: senderInfo.name,
-          senderEmail: senderInfo.email,
-          receiverName: receiverInfo.name,
-          receiverEmail: receiverInfo.email,
-          content,
-          parentEmailId,
-          messageIdHeader,
-        };
-      }),
-    );
-
-    const cleanDetails = details.filter(
-      (detail): detail is NonNullable<typeof detail> => !!detail,
-    );
-
-    await this.persistEmails(account, cleanDetails, tagMap);
-
-    return cleanDetails;
   }
 
   async getStoredEmails(account: GmailAccount, query: ListMessagesQueryDto) {
+    const limit = query.limit ?? 20;
+    const page = query.page ?? 1;
+    const skip = (page - 1) * limit;
     return this.gmailEmailRepo.find({
       where: { gmailAccount: { id: account.id } },
-      relations: ['tags'],
+      relations: ['labels'],
       order: { internalDate: 'DESC', createdAt: 'DESC' },
-      take: query.limit ?? 20,
-      skip: query.skip ?? 0,
+      take: limit,
+      skip,
     });
   }
 
   async getAllStoredEmails(account: GmailAccount) {
     return this.gmailEmailRepo.find({
       where: { gmailAccount: { id: account.id } },
-      relations: ['tags'],
+      relations: ['labels'],
       order: { internalDate: 'DESC', createdAt: 'DESC' },
     });
   }
@@ -407,12 +319,12 @@ export class GmailService {
       Buffer.from(dto.body ?? "", "utf-8").toString("base64"),
     ];
 
-    const rawMessage = rawLines.join("\r\n"); // ✔ MUST USE CRLF
+    const rawMessage = rawLines.join("\r\n");
 
     const encodedMessage = Buffer.from(rawMessage)
       .toString("base64")
       .replace(/\+/g, "-")
-      .replace(/\//g, "_"); // ✔ keep padding (=)
+      .replace(/\//g, "_");
 
     const { data } = await client.users.messages.send({
       userId: "me",
@@ -446,45 +358,47 @@ export class GmailService {
     return google.gmail({ version: 'v1', auth: oauthClient });
   }
 
-  private async ensureTag(account: GmailAccount, tagId: string) {
-    if (!tagId) {
+  private async ensureLabel(account: GmailAccount, labelId: string) {
+    if (!labelId) {
       return null;
     }
-    let tag = await this.gmailTagRepo.findOne({
+    let label = await this.gmailLabelRepo.findOne({
       where: {
         gmailAccount: { id: account.id },
-        gmailTagId: tagId,
+        gmailLabelId: labelId,
       },
     });
-    if (tag) {
-      return tag;
+    if (label) {
+      return label;
     }
     const client = await this.getClient(account);
     const { data } = await client.users.labels.get({
       userId: 'me',
-      id: tagId,
+      id: labelId,
     });
-    const map = await this.upsertTags(account, data ? [data] : []);
-    return map.get(tagId) ?? null;
+    const map = await this.upsertLabels(account, data ? [data] : []);
+    return map.get(labelId) ?? null;
   }
 
-  private async upsertTags(
+  private async upsertLabels(
     account: GmailAccount,
     labels: gmail_v1.Schema$Label[] = [],
   ) {
-    const existing = await this.gmailTagRepo.find({
+    const existing = await this.gmailLabelRepo.find({
       where: { gmailAccount: { id: account.id } },
     });
-    const existingMap = new Map(existing.map((tag) => [tag.gmailTagId, tag]));
-    const toSave: GmailTag[] = [];
+    const existingMap = new Map(
+      existing.map((label) => [label.gmailLabelId, label]),
+    );
+    const toSave: GmailLabel[] = [];
 
     for (const label of labels) {
       if (!label?.id) continue;
       const entity =
         existingMap.get(label.id) ??
-        this.gmailTagRepo.create({
+        this.gmailLabelRepo.create({
           gmailAccount: account,
-          gmailTagId: label.id,
+          gmailLabelId: label.id,
         });
       entity.name = label.name ?? entity.name ?? label.id;
       entity.type = label.type ?? entity.type;
@@ -494,7 +408,7 @@ export class GmailService {
     }
 
     if (toSave.length) {
-      await this.gmailTagRepo.save(toSave);
+      await this.gmailLabelRepo.save(toSave);
     }
 
     return existingMap;
@@ -518,7 +432,7 @@ export class GmailService {
       parentEmailId?: string;
       messageIdHeader?: string;
     }>,
-    tagMap: Map<string, GmailTag>,
+    labelMap: Map<string, GmailLabel>,
   ) {
     const ids = messages
       .map((message) => message.id)
@@ -529,7 +443,7 @@ export class GmailService {
 
     const existing = await this.gmailEmailRepo.find({
       where: { gmailMessageId: In(ids) },
-      relations: ['tags'],
+      relations: ['labels'],
     });
     const existingMap = new Map(
       existing.map((email) => [email.gmailMessageId, email]),
@@ -561,10 +475,10 @@ export class GmailService {
         ? new Date(Number(message.internalDate))
         : entity.internalDate ?? new Date();
       entity.fetchedAt = new Date();
-      entity.tags =
+      entity.labels =
         message.labelIds
-          ?.map((labelId) => tagMap.get(labelId))
-          .filter((tag): tag is GmailTag => !!tag) ?? [];
+          ?.map((labelId) => labelMap.get(labelId))
+          .filter((label): label is GmailLabel => !!label) ?? [];
 
       toSave.push(entity);
     }
@@ -637,5 +551,144 @@ export class GmailService {
     if (!data) return undefined;
     const normalized = data.replace(/-/g, '+').replace(/_/g, '/');
     return Buffer.from(normalized, 'base64').toString('utf-8');
+  }
+
+  private async pullEmailsFromGmail(
+    account: GmailAccount,
+    triggeredAt = new Date(),
+  ) {
+    const client = await this.getClient(account);
+    const defaultSince = new Date(triggeredAt);
+    defaultSince.setDate(defaultSince.getDate() - 2);
+    const sinceDate = account.lastPulledAt ?? defaultSince;
+    const queryString = this.buildQuerySince(sinceDate);
+    const collectedMessages: gmail_v1.Schema$Message[] = [];
+    let pageToken: string | undefined;
+
+    do {
+      const { data } = await client.users.messages.list({
+        userId: 'me',
+        maxResults: 100,
+        q: queryString,
+        pageToken,
+      });
+
+      if (data.messages?.length) {
+        collectedMessages.push(...data.messages);
+      }
+
+      pageToken = data.nextPageToken ?? undefined;
+    } while (pageToken);
+
+    if (!collectedMessages.length) {
+      await this.updateLastPulledAt(account, triggeredAt);
+      return [];
+    }
+
+    const newMessageIds = collectedMessages
+      .map((message) => message.id)
+      .filter((id): id is string => !!id);
+
+    if (!newMessageIds.length) {
+      await this.updateLastPulledAt(account, triggeredAt);
+      return [];
+    }
+
+    const alreadyFetched = await this.gmailEmailRepo.find({
+      select: ['gmailMessageId'],
+      where: {
+        gmailAccount: { id: account.id },
+        gmailMessageId: In(newMessageIds),
+      },
+    });
+
+    const alreadyFetchedIds = new Set(
+      alreadyFetched.map((email) => email.gmailMessageId),
+    );
+
+    const filteredMessages = collectedMessages.filter(
+      (message) => !!message.id && !alreadyFetchedIds.has(message.id),
+    );
+
+    if (!filteredMessages.length) {
+      await this.updateLastPulledAt(account, triggeredAt);
+      return [];
+    }
+
+    const { data: labelsData } = await client.users.labels.list({
+      userId: 'me',
+    });
+    const labelMap = await this.upsertLabels(account, labelsData.labels ?? []);
+
+    const details = await Promise.all(
+      filteredMessages.map(async (message) => {
+        const { data: messageData } = await client.users.messages.get({
+          userId: 'me',
+          id: message.id,
+          format: 'full',
+        });
+
+        const internalDate = messageData.internalDate
+          ? new Date(Number(messageData.internalDate))
+          : undefined;
+
+        if (internalDate && internalDate < sinceDate) {
+          return null;
+        }
+
+        const headers = this.extractHeaders(messageData.payload?.headers);
+        const senderInfo = this.parseEmailAddress(headers['From']);
+        const receiverInfo = this.parseEmailAddress(headers['To']);
+        const content = this.extractPlainText(messageData.payload);
+        const parentEmailId =
+          headers['In-Reply-To'] ?? headers['References'] ?? undefined;
+        const messageIdHeader =
+          headers['Message-ID'] ??
+          headers['Message-Id'] ??
+          headers['message-id'];
+
+        return {
+          id: messageData.id,
+          threadId: messageData.threadId,
+          snippet: messageData.snippet,
+          headers,
+          payload: messageData.payload,
+          labelIds: messageData.labelIds,
+          internalDate: messageData.internalDate,
+          senderName: senderInfo.name,
+          senderEmail: senderInfo.email,
+          receiverName: receiverInfo.name,
+          receiverEmail: receiverInfo.email,
+          content,
+          parentEmailId,
+          messageIdHeader,
+        };
+      }),
+    );
+
+    const cleanDetails = details.filter(
+      (detail): detail is NonNullable<typeof detail> => !!detail,
+    );
+
+    await this.persistEmails(account, cleanDetails, labelMap);
+    await this.updateLastPulledAt(account, triggeredAt);
+
+    return cleanDetails;
+  }
+
+  private buildQuerySince(date: Date) {
+    const timestamp = Math.floor(date.getTime() / 1000);
+    return `-from:me after:${timestamp}`;
+  }
+
+  private async updateLastPulledAt(
+    account: GmailAccount,
+    pulledAt: Date,
+  ): Promise<void> {
+    account.lastPulledAt = pulledAt;
+    await this.gmailAccountRepo.update(
+      { id: account.id },
+      { lastPulledAt: pulledAt },
+    );
   }
 }

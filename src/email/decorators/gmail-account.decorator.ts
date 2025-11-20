@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { GmailAccount } from '../entities/gmail-account.entity';
+import { GmailAccount } from '../entities/email-account.entity';
 
 export const GmailAccountCtx = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): GmailAccount => {

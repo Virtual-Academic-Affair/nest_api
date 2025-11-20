@@ -49,7 +49,7 @@
             </li>
             <li>
               Sau khi gọi <strong>Đăng nhập Gmail</strong> thành công, trang sẽ
-              lưu Gmail session token. Các thao tác đọc mail, tạo tag, trả lời
+              lưu Gmail session token. Các thao tác đọc mail, tạo label, trả lời
               về sau chỉ cần token này, không cần JWT IAM.
             </li>
           </ol>
@@ -121,12 +121,13 @@
         </div>
       </div>
 
+      
       <div class="grid gap-6 md:grid-cols-2">
         <div class="card bg-base-100 shadow">
           <div class="card-body space-y-3">
-            <h2 class="text-lg font-semibold">Đọc email</h2>
+            <h2 class="text-lg font-semibold">Doc email</h2>
             <button id="btn-load-messages" class="btn btn-outline">
-              Lấy danh sách email
+              Lay danh sach email
             </button>
             <pre
               id="messages-output"
@@ -137,32 +138,32 @@
 
         <div class="card bg-base-100 shadow">
           <div class="card-body space-y-3">
-            <h2 class="text-lg font-semibold">Quản lý tag</h2>
+            <h2 class="text-lg font-semibold">Quan ly label</h2>
             <div class="flex gap-2 flex-wrap">
-              <button id="btn-load-tags" class="btn btn-outline flex-1">
-                Xem tag
+              <button id="btn-load-labels" class="btn btn-outline flex-1">
+                Xem label
               </button>
-              <button id="btn-create-tag" class="btn btn-outline flex-1">
-                Tạo tag
+              <button id="btn-create-label" class="btn btn-outline flex-1">
+                Tao label
               </button>
             </div>
             <label class="form-control">
-              <span class="label-text">Tên tag mới</span>
-              <input id="tag-name" class="input input-bordered" />
+              <span class="label-text">Ten label moi</span>
+              <input id="label-name" class="input input-bordered" />
             </label>
             <label class="form-control">
               <span class="label-text">Message ID</span>
-              <input id="tag-message-id" class="input input-bordered" />
+              <input id="label-message-id" class="input input-bordered" />
             </label>
             <label class="form-control">
-              <span class="label-text">Tag ID</span>
-              <input id="tag-id" class="input input-bordered" />
+              <span class="label-text">Label ID</span>
+              <input id="label-id" class="input input-bordered" />
             </label>
-            <button id="btn-assign-tag" class="btn btn-outline">
-              Gắn tag
+            <button id="btn-assign-label" class="btn btn-outline">
+              Gan label
             </button>
             <pre
-              id="tags-output"
+              id="labels-output"
               class="bg-base-200 rounded p-3 text-sm h-64 overflow-auto"
             ></pre>
           </div>
@@ -171,7 +172,7 @@
 
       <div class="card bg-base-100 shadow">
         <div class="card-body space-y-3">
-          <h2 class="text-lg font-semibold">Email đã lưu trong DB</h2>
+          <h2 class="text-lg font-semibold">Email da luu trong DB</h2>
           <label class="form-control">
             <span class="label-text">Limit</span>
             <input
@@ -179,23 +180,25 @@
               type="number"
               class="input input-bordered"
               value="20"
+              min="1"
             />
           </label>
           <label class="form-control">
-            <span class="label-text">Skip</span>
+            <span class="label-text">Page</span>
             <input
-              id="local-skip"
+              id="local-page"
               type="number"
               class="input input-bordered"
-              value="0"
+              value="1"
+              min="1"
             />
           </label>
           <div class="flex flex-wrap gap-2">
             <button id="btn-load-local" class="btn btn-outline">
-              Lấy email (pagination)
+              Lay email (pagination)
             </button>
             <button id="btn-load-local-all" class="btn btn-outline">
-              Lấy tất cả email đã lưu
+              Lay tat ca email da luu
             </button>
           </div>
           <pre
@@ -206,49 +209,11 @@
       </div>
 
       <div class="card bg-base-100 shadow">
-        <div class="card-body space-y-3">
-          <h2 class="text-lg font-semibold">Phản hồi email</h2>
-          <label class="form-control">
-            <span class="label-text">Thread ID</span>
-            <input id="reply-thread" class="input input-bordered" />
-          </label>
-          <label class="form-control">
-            <span class="label-text">Message-ID (tùy chọn)</span>
-            <input id="reply-message-id" class="input input-bordered" />
-          </label>
-          <label class="form-control">
-            <span class="label-text">Người nhận</span>
-            <input id="reply-to" class="input input-bordered" />
-          </label>
-          <label class="form-control">
-            <span class="label-text">Tiêu đề</span>
-            <input id="reply-subject" class="input input-bordered" />
-          </label>
-          <label class="form-control">
-            <span class="label-text">Nội dung</span>
-            <textarea
-              id="reply-body"
-              class="textarea textarea-bordered"
-              rows="4"
-            ></textarea>
-          </label>
-          <button id="btn-send-reply" class="btn btn-primary">
-            Gửi phản hồi
-          </button>
-          <pre
-            id="reply-output"
-            class="bg-base-200 rounded p-3 text-sm h-48 overflow-auto"
-          ></pre>
-        </div>
-      </div>
-
-      <div class="card bg-base-100 shadow">
         <div class="card-body">
           <h2 class="text-lg font-semibold mb-2">Log</h2>
           <pre id="log-output" class="bg-base-200 rounded p-3 text-sm"></pre>
         </div>
       </div>
-    </div>
 
     <script>
       const apiBaseInput = document.getElementById('api-base');
@@ -452,11 +417,11 @@
         });
 
       document
-        .getElementById('btn-load-tags')
+        .getElementById('btn-load-labels')
         .addEventListener('click', async () => {
           try {
-            const data = await fetchJson('/gmail/tags');
-            document.getElementById('tags-output').textContent =
+            const data = await fetchJson('/gmail/labels');
+            document.getElementById('labels-output').textContent =
               JSON.stringify(data, null, 2);
             setLog(data);
           } catch (err) {
@@ -468,7 +433,12 @@
         .getElementById('btn-load-local')
         .addEventListener('click', async () => {
           try {
-            const data = await fetchJson(`/gmail/email`);
+            const limit = Number(document.getElementById('local-limit').value);
+            const page = Number(document.getElementById('local-page').value);
+            const params = new URLSearchParams();
+            if (limit) params.set('limit', String(limit));
+            if (page) params.set('page', String(page));
+            const data = await fetchJson(`/gmail/email${params.toString() ? `?${params}` : ''}`);
             document.getElementById('local-output').textContent =
               JSON.stringify(data, null, 2);
             setLog({ message: 'Fetched stored emails', count: data.length });
@@ -476,7 +446,6 @@
             setLog({ error: err.message });
           }
         });
-
       document
         .getElementById('btn-load-local-all')
         .addEventListener('click', async () => {
@@ -494,36 +463,36 @@
         });
 
       document
-        .getElementById('btn-create-tag')
+        .getElementById('btn-create-label')
         .addEventListener('click', async () => {
-          const name = document.getElementById('tag-name').value.trim();
-          if (!name) return alert('Nhập tên tag');
+          const name = document.getElementById('label-name').value.trim();
+          if (!name) return alert('Nhap ten label');
           try {
-            const data = await fetchJson('/gmail/tags', {
+            const data = await fetchJson('/gmail/labels', {
               method: 'POST',
               body: JSON.stringify({ name }),
             });
             setLog(data);
-            document.getElementById('btn-load-tags').click();
+            document.getElementById('btn-load-labels').click();
           } catch (err) {
             setLog({ error: err.message });
           }
         });
 
       document
-        .getElementById('btn-assign-tag')
+        .getElementById('btn-assign-label')
         .addEventListener('click', async () => {
           const messageId = document
-            .getElementById('tag-message-id')
+            .getElementById('label-message-id')
             .value.trim();
-          const tagId = document.getElementById('tag-id').value.trim();
-          if (!messageId || !tagId) {
-            return alert('Nhập messageId và tagId');
+          const labelId = document.getElementById('label-id').value.trim();
+          if (!messageId || !labelId) {
+            return alert('Nhap messageId va labelId');
           }
           try {
-            const data = await fetchJson('/gmail/tags/assign', {
+            const data = await fetchJson('/gmail/labels/assign', {
               method: 'POST',
-              body: JSON.stringify({ messageId, tagId }),
+              body: JSON.stringify({ messageId, labelId }),
             });
             setLog(data);
           } catch (err) {
@@ -559,3 +528,9 @@
     </script>
   </body>
 </html>
+
+
+
+
+
+

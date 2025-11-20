@@ -11,6 +11,6 @@ export class ListMessagesQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(0)
-  skip?: number;
+  @Min(1)
+  page?: number;
 }

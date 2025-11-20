@@ -8,15 +8,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
-import { GmailService } from './gmail.service';
-import { CreateGmailTagDto } from './dto/create-gmail-tag.dto';
-import { AddGmailTagDto } from './dto/add-gmail-tag.dto';
+import { GmailService } from './email.service';
+import { CreateGmailLabelDto } from './dto/create-gmail-label.dto';
+import { AddGmailLabelDto } from './dto/add-gmail-label.dto';
 import { ReplyMailDto } from './dto/reply-mail.dto';
 import { RegisterGmailAccountDto } from './dto/register-gmail-account.dto';
 import { ListMessagesQueryDto } from './dto/list-messages-query.dto';
-import { GmailSessionGuard } from './guards/gmail-session.guard';
+import { GmailSessionGuard } from './guards/email-session.guard';
 import { GmailAccountCtx } from './decorators/gmail-account.decorator';
-import { GmailAccount } from './entities/gmail-account.entity';
+import { GmailAccount } from './entities/email-account.entity';
 import { Auth } from 'src/iam/authentication/decorators/auth.decorator';
 import { AuthType } from 'src/iam/authentication/enums/auth-type.enum';
 
@@ -52,41 +52,42 @@ export class GmailController {
   }
 
   @UseGuards(GmailSessionGuard)
-  @Get('tags')
-  getTags(@GmailAccountCtx() account: GmailAccount) {
-    return this.gmailService.getTags(account);
+  @Get('labels')
+  getLabels(@GmailAccountCtx() account: GmailAccount) {
+    return this.gmailService.getLabels(account);
   }
 
   @UseGuards(GmailSessionGuard)
-  @Get('tags/:messageId')
-  getTagsForEmail(
+  @Get('labels/:messageId')
+  getLabelsForEmail(
     @GmailAccountCtx() account: GmailAccount,
     @Param('messageId') messageId: string,
   ) {
-    return this.gmailService.getTagsForEmail(account, messageId);
+    return this.gmailService.getLabelsForEmail(account, messageId);
   }
 
   @UseGuards(GmailSessionGuard)
-  @Post('tags')
-  createTag(
+  @Post('labels')
+  createLabel(
     @GmailAccountCtx() account: GmailAccount,
-    @Body() dto: CreateGmailTagDto,
+    @Body() dto: CreateGmailLabelDto,
   ) {
-    return this.gmailService.createTag(account, dto);
+    return this.gmailService.createLabel(account, dto);
   }
 
   @UseGuards(GmailSessionGuard)
-  @Post('tags/assign')
-  addTag(
+  @Post('labels/assign')
+  addLabel(
     @GmailAccountCtx() account: GmailAccount,
-    @Body() dto: AddGmailTagDto,
+    @Body() dto: AddGmailLabelDto,
   ) {
-    return this.gmailService.addTagToMail(account, dto);
+    return this.gmailService.addLabelToMail(account, dto);
   }
 
   @UseGuards(GmailSessionGuard)
   @Get('messages')
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'page', required: false, type: Number })
   readMessages(
     @GmailAccountCtx() account: GmailAccount,
     @Query() query: ListMessagesQueryDto,
@@ -96,8 +97,8 @@ export class GmailController {
 
   @UseGuards(GmailSessionGuard)
   @Get('email')
-  @ApiQuery({ name: 'take', required: false, type: Number })
-  @ApiQuery({ name: 'skip', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'page', required: false, type: Number })
   getEmails(
     @GmailAccountCtx() account: GmailAccount,
     @Query() query: ListMessagesQueryDto,
