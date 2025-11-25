@@ -1,18 +1,14 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { UsersModule } from './users/users.module';
+import { AuthenticationModule } from '@authentication/authentication.module';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { IamModule } from './iam/iam.module';
+import { SharedModule } from '@shared/shared.module';
 import { ConfigModule } from '@nestjs/config';
-import { ExampleResourceModule } from './exampleResource/exampleResource.module';
 import { DatabaseType } from 'typeorm';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    ExampleResourceModule,
-    UsersModule,
+    AuthenticationModule,
     TypeOrmModule.forRoot({
       type: process.env.DB_TYPE as DatabaseType,
       host: process.env.DB_HOST,
@@ -23,9 +19,7 @@ import { DatabaseType } from 'typeorm';
       autoLoadEntities: true,
       synchronize: true,
     } as TypeOrmModuleOptions),
-    IamModule,
+    SharedModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
