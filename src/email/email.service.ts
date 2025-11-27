@@ -12,8 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GenerateAuthUrlOpts } from 'google-auth-library';
 import { google, gmail_v1 } from 'googleapis';
 import { In, Repository } from 'typeorm';
-import { User } from 'src/users/entities/user.entity';
-import { Role } from 'src/users/enums/role.enum';
+
 import { AddGmailLabelDto } from './dto/add-gmail-label.dto';
 import { CreateGmailLabelDto } from './dto/create-gmail-label.dto';
 import { ListMessagesQueryDto } from './dto/list-messages-query.dto';
@@ -22,12 +21,14 @@ import { ReplyMailDto } from './dto/reply-mail.dto';
 import { GmailAccount } from './entities/email-account.entity';
 import { GmailLabel } from './entities/email-label.entity';
 import { GmailEmail } from './entities/email-email.entity';
+import { User } from '@authentication/entities/user.entity';
+import { Role } from '@shared/authorization/enums/role.enum';
 
 const GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.modify'];
 
 @Injectable()
-export class GmailService {
-  private readonly logger = new Logger(GmailService.name);
+export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
   private readonly sessionSecret: string;
   private readonly sessionTtl: string;
 

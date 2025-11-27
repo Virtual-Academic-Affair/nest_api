@@ -6,9 +6,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { GmailService } from '../email.service';
+import { EmailService } from '../email.service';
 import { GmailAccount } from '../entities/email-account.entity';
-import { Role } from 'src/users/enums/role.enum';
+import { Role } from '@shared/authorization/enums/role.enum';
 
 declare module 'express' {
   interface Request {
@@ -17,8 +17,8 @@ declare module 'express' {
 }
 
 @Injectable()
-export class GmailSessionGuard implements CanActivate {
-  constructor(private readonly gmailService: GmailService) {}
+export class EmailSessionGuard implements CanActivate {
+  constructor(private readonly emailService: EmailService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -27,7 +27,7 @@ export class GmailSessionGuard implements CanActivate {
       throw new UnauthorizedException('Thieu Gmail session token.');
     }
 
-    const account = await this.gmailService.validateSession(token).catch(() => {
+    const account = await this.emailService.validateSession(token).catch(() => {
       throw new UnauthorizedException('Gmail session token khong hop le.');
     });
 

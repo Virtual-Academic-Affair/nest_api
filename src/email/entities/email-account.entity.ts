@@ -8,9 +8,9 @@ import {
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
-import { User } from 'src/users/entities/user.entity';
 import { GmailLabel } from './email-label.entity';
 import { GmailEmail } from './email-email.entity';
+import { User } from '@authentication/entities/user.entity';
 
 @Entity()
 @Unique(['email'])
