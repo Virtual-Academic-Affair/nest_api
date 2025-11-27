@@ -3,8 +3,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
+import { AuthenticationModule } from '@authentication/authentication.module';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { IamModule } from './iam/iam.module';
+import { SharedModule } from '@shared/shared.module';
 import { ConfigModule } from '@nestjs/config';
 import { ExampleResourceModule } from './exampleResource/exampleResource.module';
 import { GmailModule } from './email/email.module';
@@ -16,6 +17,7 @@ import { DatabaseType } from 'typeorm';
     ScheduleModule.forRoot(),
     ExampleResourceModule,
     UsersModule,
+    AuthenticationModule,
     TypeOrmModule.forRoot({
       type: process.env.DB_TYPE as DatabaseType,
       host: process.env.DB_HOST,
@@ -28,8 +30,7 @@ import { DatabaseType } from 'typeorm';
     } as TypeOrmModuleOptions),
     IamModule,
     GmailModule,
+    SharedModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
