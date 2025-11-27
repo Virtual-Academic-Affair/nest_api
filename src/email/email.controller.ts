@@ -20,9 +20,9 @@ import { GmailAccount } from './entities/email-account.entity';
 import { Auth } from 'src/iam/authentication/decorators/auth.decorator';
 import { AuthType } from 'src/iam/authentication/enums/auth-type.enum';
 
-@ApiTags('Gmail')
-@Auth(AuthType.None) 
-@Controller('gmail')
+@ApiTags('Email')
+@Auth(AuthType.None)
+@Controller('email')
 export class GmailController {
   constructor(private readonly gmailService: GmailService) {}
 

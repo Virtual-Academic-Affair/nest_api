@@ -1,12 +1,14 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { GmailService } from '../email.service';
 import { GmailAccount } from '../entities/email-account.entity';
+import { Role } from 'src/users/enums/role.enum';
 
 declare module 'express' {
   interface Request {
@@ -22,12 +24,16 @@ export class GmailSessionGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const token = this.extractToken(request);
     if (!token) {
-      throw new UnauthorizedException('Thiếu Gmail session token.');
+      throw new UnauthorizedException('Thieu Gmail session token.');
     }
 
     const account = await this.gmailService.validateSession(token).catch(() => {
-      throw new UnauthorizedException('Gmail session token không hợp lệ.');
+      throw new UnauthorizedException('Gmail session token khong hop le.');
     });
+
+    if (!account.user || account.user.role !== Role.Admin) {
+      throw new ForbiddenException('Yeu cau quyen admin de dung Gmail module.');
+    }
 
     request.gmailAccount = account;
     return true;

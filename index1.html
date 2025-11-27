@@ -292,7 +292,7 @@
 
       const loginWithCode = async (code) => {
         try {
-          const data = await fetchJson('/gmail/login', {
+          const data = await fetchJson('/email/login', {
             method: 'POST',
             body: JSON.stringify({ code }),
             auth: false,
@@ -310,7 +310,7 @@
 
       const callRefreshSession = async () => {
         try {
-          const data = await fetchJson('/gmail/session/refresh', {
+          const data = await fetchJson('/email/session/refresh', {
             method: 'POST',
           });
           persistSession(data.token, {
@@ -343,7 +343,7 @@
             if (forceConsent) params.set('forceConsent', 'true');
             const query = params.toString();
             const data = await fetchJson(
-              `/gmail/oauth-url${query ? `?${query}` : ''}`,
+              `/email/oauth-url${query ? `?${query}` : ''}`,
               { auth: false },
             );
             const redirectUri = redirectInput.value.trim();
@@ -407,7 +407,7 @@
         .getElementById('btn-load-messages')
         .addEventListener('click', async () => {
           try {
-            const data = await fetchJson(`/gmail/messages`);
+            const data = await fetchJson(`/email/messages`);
             document.getElementById('messages-output').textContent =
               JSON.stringify(data, null, 2);
             setLog(data);
@@ -420,7 +420,7 @@
         .getElementById('btn-load-labels')
         .addEventListener('click', async () => {
           try {
-            const data = await fetchJson('/gmail/labels');
+            const data = await fetchJson('/email/labels');
             document.getElementById('labels-output').textContent =
               JSON.stringify(data, null, 2);
             setLog(data);
@@ -438,7 +438,7 @@
             const params = new URLSearchParams();
             if (limit) params.set('limit', String(limit));
             if (page) params.set('page', String(page));
-            const data = await fetchJson(`/gmail/email${params.toString() ? `?${params}` : ''}`);
+            const data = await fetchJson(`/email/email${params.toString() ? `?${params}` : ''}`);
             document.getElementById('local-output').textContent =
               JSON.stringify(data, null, 2);
             setLog({ message: 'Fetched stored emails', count: data.length });
@@ -450,7 +450,7 @@
         .getElementById('btn-load-local-all')
         .addEventListener('click', async () => {
           try {
-            const data = await fetchJson(`/gmail/emailAll`);
+            const data = await fetchJson(`/email/emailAll`);
             document.getElementById('local-output').textContent =
               JSON.stringify(data, null, 2);
             setLog({
@@ -468,7 +468,7 @@
           const name = document.getElementById('label-name').value.trim();
           if (!name) return alert('Nhap ten label');
           try {
-            const data = await fetchJson('/gmail/labels', {
+            const data = await fetchJson('/email/labels', {
               method: 'POST',
               body: JSON.stringify({ name }),
             });
@@ -490,7 +490,7 @@
             return alert('Nhap messageId va labelId');
           }
           try {
-            const data = await fetchJson('/gmail/labels/assign', {
+            const data = await fetchJson('/email/labels/assign', {
               method: 'POST',
               body: JSON.stringify({ messageId, labelId }),
             });
@@ -514,7 +514,7 @@
             return alert('threadId và email người nhận là bắt buộc');
           }
           try {
-            const data = await fetchJson('/gmail/messages/reply', {
+            const data = await fetchJson('/email/messages/reply', {
               method: 'POST',
               body: JSON.stringify(payload),
             });
