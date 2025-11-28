@@ -8,17 +8,18 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
-import { EmailService } from './email.service';
-import { CreateGmailLabelDto } from './dto/create-gmail-label.dto';
-import { AddGmailLabelDto } from './dto/add-gmail-label.dto';
-import { ReplyMailDto } from './dto/reply-mail.dto';
-import { RegisterGmailAccountDto } from './dto/register-gmail-account.dto';
-import { ListMessagesQueryDto } from './dto/list-messages-query.dto';
-import { EmailSessionGuard } from './guards/email-session.guard';
-import { GmailAccountCtx } from './decorators/gmail-account.decorator';
-import { GmailAccount } from './entities/email-account.entity';
+
 import { Auth } from '@shared/authentication/decorators/auth.decorator';
 import { AuthType } from '@shared/authentication/enums/auth-type.enum';
+import { BaseQueryDto } from '@shared/dto/base-query.dto';
+import { EmailService } from '../services/email.service';
+import { EmailSessionGuard } from '../guards/email-session.guard';
+import { GmailAccountCtx } from '../decorators/gmail-account.decorator';
+import { GmailAccount } from '../entities/email-account.entity';
+import { RegisterGmailAccountDto } from '../dto/register-gmail-account.dto';
+import { CreateGmailLabelDto } from '../dto/create-gmail-label.dto';
+import { AddGmailLabelDto } from '../dto/add-gmail-label.dto';
+import { ReplyMailDto } from '../dto/reply-mail.dto';
 
 @ApiTags('Email')
 @Auth(AuthType.None)
@@ -90,9 +91,8 @@ export class EmailController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   readMessages(
     @GmailAccountCtx() account: GmailAccount,
-    @Query() query: ListMessagesQueryDto,
   ) {
-    return this.emailService.readAllMails(account, query);
+    return this.emailService.readAllMails(account);
   }
 
   @UseGuards(EmailSessionGuard)
@@ -101,7 +101,7 @@ export class EmailController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   getEmails(
     @GmailAccountCtx() account: GmailAccount,
-    @Query() query: ListMessagesQueryDto,
+    @Query() query: BaseQueryDto,
   ) {
     return this.emailService.getStoredEmails(account, query);
   }

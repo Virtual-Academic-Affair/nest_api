@@ -11,18 +11,17 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GenerateAuthUrlOpts } from 'google-auth-library';
 import { google, gmail_v1 } from 'googleapis';
-import { In, Repository } from 'typeorm';
-
-import { AddGmailLabelDto } from './dto/add-gmail-label.dto';
-import { CreateGmailLabelDto } from './dto/create-gmail-label.dto';
-import { ListMessagesQueryDto } from './dto/list-messages-query.dto';
-import { RegisterGmailAccountDto } from './dto/register-gmail-account.dto';
-import { ReplyMailDto } from './dto/reply-mail.dto';
-import { GmailAccount } from './entities/email-account.entity';
-import { GmailLabel } from './entities/email-label.entity';
-import { GmailEmail } from './entities/email-email.entity';
+import { Brackets, In, Repository } from 'typeorm';
+import { AddGmailLabelDto } from '../dto/add-gmail-label.dto';
+import { CreateGmailLabelDto } from '../dto/create-gmail-label.dto';
+import { RegisterGmailAccountDto } from '../dto/register-gmail-account.dto';
+import { ReplyMailDto } from '../dto/reply-mail.dto';
+import { GmailAccount } from '../entities/email-account.entity';
+import { GmailLabel } from '../entities/email-label.entity';
+import { GmailEmail } from '../entities/email-email.entity';
 import { User } from '@authentication/entities/user.entity';
 import { Role } from '@shared/authorization/enums/role.enum';
+import { BaseQueryDto } from '@shared/dto/base-query.dto';
 
 const GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.modify'];
 
@@ -48,7 +47,7 @@ export class EmailService {
       this.configService.get<string>('GMAIL_SESSION_SECRET') ?? '';
     if (!this.sessionSecret) {
       throw new ServiceUnavailableException(
-        'Thiếu EMAIL_SESSION_SECRET configuration.',
+        'Missing EMAIL_SESSION_SECRET configuration.',
       );
     }
     this.sessionTtl =
@@ -262,7 +261,7 @@ export class EmailService {
     return data;
   }
 
-  async readAllMails(account: GmailAccount, query: ListMessagesQueryDto) {
+  async readAllMails(account: GmailAccount) {
     return this.pullEmailsFromGmail(account);
   }
 
@@ -282,17 +281,59 @@ export class EmailService {
     }
   }
 
-  async getStoredEmails(account: GmailAccount, query: ListMessagesQueryDto) {
-    const limit = query.limit ?? 20;
-    const page = query.page ?? 1;
-    const skip = (page - 1) * limit;
-    return this.gmailEmailRepo.find({
-      where: { gmailAccount: { id: account.id } },
-      relations: ['labels'],
-      order: { internalDate: 'DESC', createdAt: 'DESC' },
-      take: limit,
-      skip,
-    });
+  async getStoredEmails(account: GmailAccount, query: BaseQueryDto) {
+    const qb = this.gmailEmailRepo
+      .createQueryBuilder('email')
+      .leftJoinAndSelect('email.labels', 'label')
+      .where('email.gmailAccountId = :accountId', { accountId: account.id });
+
+    const page = Math.max(query.page || 1);
+    const limit = Math.min(Math.max(1, query.limit), 20);
+    const skip = (page - 1) * Math.min(limit, 20);
+
+    const keyword = query.keyword;
+    if (keyword) {
+      qb.andWhere(
+        new Brackets((qb) => {
+          qb.where('email.subject ILIKE :keyword')
+            .orWhere('email.senderEmail ILIKE :keyword')
+            .orWhere('email.receiverEmail ILIKE :keyword')
+            .orWhere('email.content ILIKE :keyword')
+            .orWhere('email.gmailMessageId ILIKE :keyword')
+            .orWhere('email.threadId ILIKE :keyword');
+        }),
+      ).setParameter('keyword', `%${keyword}%`);
+    }
+
+    const orderableColumns = new Set([
+      'internalDate',
+      'createdAt',
+      'updatedAt',
+      'senderEmail',
+      'receiverEmail',
+      'subject',
+      'id',
+    ]);
+    const orderColumn = orderableColumns.has(query.order_col ?? '')
+      ? (query.order_col as string)
+      : 'id';
+    const orderDirection = query.order_dir === 'DESC' ? 'DESC' : 'ASC';
+
+    qb.orderBy(`email.${orderColumn}`, orderDirection)
+      .skip(skip)
+      .take(limit);
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return {
+      items,
+      pagination: {
+        total,
+        currentPage: page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async getAllStoredEmails(account: GmailAccount) {

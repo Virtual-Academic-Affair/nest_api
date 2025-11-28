@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { EmailService } from '../email.service';
+import { EmailService } from '../services/email.service';
 import { GmailAccount } from '../entities/email-account.entity';
 import { Role } from '@shared/authorization/enums/role.enum';
 

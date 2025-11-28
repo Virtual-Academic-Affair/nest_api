@@ -1,536 +1,452 @@
 <!DOCTYPE html>
-<html lang="vi" data-theme="light">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gmail Module Tester</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css"
-      rel="stylesheet"
-      type="text/css"
-    />
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-
-  <body class="bg-base-200 min-h-screen p-6">
-    <div class="max-w-4xl mx-auto space-y-6">
-      <div class="card bg-base-100 shadow">
-        <div class="card-body grid gap-4 md:grid-cols-2">
-          <label class="form-control">
-            <span class="label-text font-semibold">API base URL</span>
-            <input
-              id="api-base"
-              class="input input-bordered"
-              value="http://localhost:3000"
-            />
-          </label>
-          <label class="form-control">
-            <span class="label-text font-semibold">OAuth redirect URI</span>
-            <input
-              id="redirect-uri"
-              class="input input-bordered"
-              value="http://127.0.0.1:5500/index1.html"
-            />
-          </label>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gmail Module Playground</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-base-200 min-h-screen p-4">
+  <div class="max-w-5xl mx-auto space-y-4">
+    <div class="card bg-base-100 shadow">
+      <div class="card-body grid gap-3 md:grid-cols-3">
+        <label class="form-control"><span class="label-text">API base</span><input id="api-base" class="input input-bordered" value="http://localhost:3000" /></label>
+        <label class="form-control"><span class="label-text">Redirect URI</span><input id="redirect-uri" class="input input-bordered" value="http://127.0.0.1:5500/index1.html" /></label>
+        <div class="space-y-2">
+          <label class="form-control"><span class="label-text">Admin token (Bearer)</span><input id="admin-token" class="input input-bordered" /></label>
+          <div class="flex gap-2"><button id="btn-save-admin" class="btn btn-xs">Save</button><button id="btn-clear-admin" class="btn btn-xs btn-outline">Clear</button></div>
         </div>
       </div>
+    </div>
 
+    <div class="card bg-base-100 shadow">
+      <div class="card-body text-sm space-y-1">
+        <p>1) Get Google login URL → sign in. 2) Paste code to login. 3) Gmail routes use session token; admin routes use admin token above.</p>
+        <div class="alert alert-info"><span>Auth header: Gmail routes = Bearer &lt;gmail_session_token&gt;; Admin routes = Bearer &lt;admin_access_token&gt;.</span></div>
+      </div>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-2">
       <div class="card bg-base-100 shadow">
-        <div class="card-body space-y-3 text-sm leading-6">
-          <h2 class="text-lg font-semibold">Quy trình</h2>
-          <ol class="list-decimal list-inside space-y-1">
-            <li>
-              Bấm <strong>Lấy URL đăng nhập</strong> → chọn đúng email giáo vụ
-              (đã có trong bảng <code>user</code> với role
-              <code>lecturer</code> hoặc <code>admin</code>).
-            </li>
-            <li>
-              Copy tham số <code>code</code> ở URL redirect và dán vào bước 2.
-            </li>
-            <li>
-              Sau khi gọi <strong>Đăng nhập Gmail</strong> thành công, trang sẽ
-              lưu Gmail session token. Các thao tác đọc mail, tạo label, trả lời
-              về sau chỉ cần token này, không cần JWT IAM.
-            </li>
-          </ol>
-          <div class="alert alert-info text-xs">
-            <span>
-              Gmail session token do API trả về phải được gửi ở header
-              <code>Authorization: Bearer &lt;token&gt;</code> cho mọi request
-              phía dưới. Trang này sẽ tự thực hiện nếu bạn đăng nhập thành công.
-            </span>
-          </div>
+        <div class="card-body space-y-2">
+          <h3 class="font-semibold">Step 1: Consent</h3>
+          <input id="oauth-state" class="input input-bordered" placeholder="state (optional)" />
+          <label class="label cursor-pointer gap-2"><input type="checkbox" id="force-consent" class="checkbox" /><span class="label-text">Force consent</span></label>
+          <button id="btn-get-oauth" class="btn btn-primary">Get Google login URL</button>
         </div>
       </div>
-
       <div class="card bg-base-100 shadow">
-        <div class="card-body space-y-4">
-          <h2 class="text-xl font-semibold">B1 – Xin quyền Gmail</h2>
-          <label class="form-control">
-            <span class="label-text">Tùy chọn state</span>
-            <input id="oauth-state" class="input input-bordered" />
-          </label>
-          <label class="label cursor-pointer justify-start gap-3">
-            <input type="checkbox" id="force-consent" class="checkbox" />
-            <span class="label-text">
-              Bắt buộc hiện màn hình cấp quyền (dùng khi liên kết lần đầu hoặc
-              refresh token bị thu hồi)
-            </span>
-          </label>
-          <button id="btn-get-oauth" class="btn btn-primary w-full md:w-auto">
-            Lấy URL đăng nhập Google
-          </button>
-        </div>
-      </div>
-
-      <div class="card bg-base-100 shadow">
-        <div class="card-body space-y-4">
-          <h2 class="text-xl font-semibold">B2 – Đăng nhập Gmail module</h2>
-          <label class="form-control">
-            <span class="label-text">Code Google trả về</span>
-            <input id="oauth-code" class="input input-bordered" />
-          </label>
-          <button id="btn-login" class="btn btn-success w-full md:w-auto">
-            Đăng nhập Gmail
-          </button>
-          <div class="alert alert-success text-sm hidden" id="session-alert">
-            <div>
-              <p>
-                Đã đăng nhập với <span id="session-email" class="font-semibold"></span>
-              </p>
-              <p class="text-xs">
-                Token hết hạn sau <span id="session-exp"></span>. Bạn có thể dán
-                token ở nơi khác bằng nút bên dưới.
-              </p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <button id="btn-copy-token" class="btn btn-xs btn-outline">
-                Copy token
-              </button>
-              <button
-                id="btn-refresh-session"
-                class="btn btn-xs btn-outline btn-primary"
-              >
-                Dùng token hiện tại đăng nhập lại
-              </button>
-              <button id="btn-logout" class="btn btn-xs btn-outline btn-error">
-                Đăng xuất Gmail module
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      
-      <div class="grid gap-6 md:grid-cols-2">
-        <div class="card bg-base-100 shadow">
-          <div class="card-body space-y-3">
-            <h2 class="text-lg font-semibold">Doc email</h2>
-            <button id="btn-load-messages" class="btn btn-outline">
-              Lay danh sach email
-            </button>
-            <pre
-              id="messages-output"
-              class="bg-base-200 rounded p-3 text-sm h-64 overflow-auto"
-            ></pre>
-          </div>
-        </div>
-
-        <div class="card bg-base-100 shadow">
-          <div class="card-body space-y-3">
-            <h2 class="text-lg font-semibold">Quan ly label</h2>
+        <div class="card-body space-y-2">
+          <h3 class="font-semibold">Step 2: Login Gmail module</h3>
+          <input id="oauth-code" class="input input-bordered" placeholder="Google code" />
+          <button id="btn-login" class="btn btn-success">Login Gmail</button>
+          <div id="session-alert" class="alert alert-success hidden text-sm flex-col items-start gap-2">
+            <div>Logged in as <span id="session-email" class="font-semibold"></span>. Expires in <span id="session-exp"></span>.</div>
             <div class="flex gap-2 flex-wrap">
-              <button id="btn-load-labels" class="btn btn-outline flex-1">
-                Xem label
-              </button>
-              <button id="btn-create-label" class="btn btn-outline flex-1">
-                Tao label
-              </button>
+              <button id="btn-copy-token" class="btn btn-xs btn-outline">Copy token</button>
+              <button id="btn-refresh-session" class="btn btn-xs btn-outline btn-primary">Refresh</button>
+              <button id="btn-logout" class="btn btn-xs btn-outline btn-error">Logout</button>
             </div>
-            <label class="form-control">
-              <span class="label-text">Ten label moi</span>
-              <input id="label-name" class="input input-bordered" />
-            </label>
-            <label class="form-control">
-              <span class="label-text">Message ID</span>
-              <input id="label-message-id" class="input input-bordered" />
-            </label>
-            <label class="form-control">
-              <span class="label-text">Label ID</span>
-              <input id="label-id" class="input input-bordered" />
-            </label>
-            <button id="btn-assign-label" class="btn btn-outline">
-              Gan label
-            </button>
-            <pre
-              id="labels-output"
-              class="bg-base-200 rounded p-3 text-sm h-64 overflow-auto"
-            ></pre>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-2">
+      <div class="card bg-base-100 shadow">
+        <div class="card-body space-y-2">
+          <h3 class="font-semibold">Pull Gmail messages</h3>
+          <button id="btn-load-messages" class="btn btn-outline">Pull</button>
+          <pre id="messages-output" class="bg-base-200 rounded p-2 text-xs h-56 overflow-auto"></pre>
+        </div>
+      </div>
+      <div class="card bg-base-100 shadow">
+        <div class="card-body space-y-2">
+          <h3 class="font-semibold">Session labels</h3>
+          <div class="flex gap-2"><button id="btn-load-labels" class="btn btn-outline flex-1">Get</button><button id="btn-create-label" class="btn btn-outline flex-1">Create</button></div>
+          <input id="label-name" class="input input-bordered" placeholder="Label name" />
+          <input id="label-message-id" class="input input-bordered" placeholder="Message ID" />
+          <input id="label-id" class="input input-bordered" placeholder="Label ID" />
+          <button id="btn-assign-label" class="btn btn-outline">Assign label</button>
+          <pre id="labels-output" class="bg-base-200 rounded p-2 text-xs h-56 overflow-auto"></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow">
+      <div class="card-body space-y-2">
+        <h3 class="font-semibold">Stored emails (session)</h3>
+        <div class="grid gap-2 md:grid-cols-4">
+          <input id="local-limit" type="number" class="input input-bordered" value="10" min="1" placeholder="limit" />
+          <input id="local-page" type="number" class="input input-bordered" value="1" min="1" placeholder="page" />
+          <input id="local-keyword" class="input input-bordered" placeholder="keyword" />
+          <div class="grid grid-cols-2 gap-2">
+            <input id="local-order-col" class="input input-bordered" placeholder="order_col (e.g. internalDate)" />
+            <select id="local-order-dir" class="select select-bordered"><option>ASC</option><option selected>DESC</option></select>
+          </div>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button id="btn-load-local" class="btn btn-outline">Fetch (paged)</button>
+          <button id="btn-load-local-all" class="btn btn-outline">Fetch all</button>
+        </div>
+        <pre id="local-output" class="bg-base-200 rounded p-2 text-xs h-56 overflow-auto"></pre>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow">
+      <div class="card-body space-y-2">
+        <h3 class="font-semibold">Reply mail (session)</h3>
+        <div class="grid gap-2 md:grid-cols-2">
+          <input id="reply-thread" class="input input-bordered" placeholder="Thread ID" />
+          <input id="reply-message-id" class="input input-bordered" placeholder="Message ID (for headers)" />
+          <input id="reply-to" class="input input-bordered" placeholder="To" />
+          <input id="reply-subject" class="input input-bordered" placeholder="Subject" />
+        </div>
+        <textarea id="reply-body" class="textarea textarea-bordered" placeholder="Body"></textarea>
+        <button id="btn-send-reply" class="btn btn-outline">Send reply</button>
+        <pre id="reply-output" class="bg-base-200 rounded p-2 text-xs h-48 overflow-auto"></pre>
+      </div>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-2">
+      <div class="card bg-base-100 shadow">
+        <div class="card-body space-y-2">
+          <h3 class="font-semibold">Admin labels (Bearer admin token)</h3>
+          <div class="grid gap-2 md:grid-cols-2">
+            <input id="admin-label-account" class="input input-bordered" placeholder="accountId (filter/required for create)" />
+            <input id="admin-label-keyword" class="input input-bordered" placeholder="keyword" />
+            <input id="admin-label-page" type="number" value="1" class="input input-bordered" />
+            <input id="admin-label-limit" type="number" value="10" class="input input-bordered" />
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <button id="btn-admin-labels-list" class="btn btn-outline">List</button>
+            <button id="btn-admin-labels-create" class="btn btn-outline">Create</button>
+            <button id="btn-admin-labels-update" class="btn btn-outline">Update</button>
+            <button id="btn-admin-labels-delete" class="btn btn-outline btn-error">Delete</button>
+          </div>
+          <input id="admin-label-id" class="input input-bordered" placeholder="Label ID (update/delete)" />
+          <input id="admin-gmail-label-id" class="input input-bordered" placeholder="gmailLabelId" />
+          <input id="admin-label-name" class="input input-bordered" placeholder="name" />
+          <input id="admin-label-type" class="input input-bordered" placeholder="type" />
+          <input id="admin-label-color" class="input input-bordered" placeholder="color" />
+          <pre id="admin-labels-output" class="bg-base-200 rounded p-2 text-xs h-48 overflow-auto"></pre>
         </div>
       </div>
 
       <div class="card bg-base-100 shadow">
-        <div class="card-body space-y-3">
-          <h2 class="text-lg font-semibold">Email da luu trong DB</h2>
-          <label class="form-control">
-            <span class="label-text">Limit</span>
-            <input
-              id="local-limit"
-              type="number"
-              class="input input-bordered"
-              value="20"
-              min="1"
-            />
-          </label>
-          <label class="form-control">
-            <span class="label-text">Page</span>
-            <input
-              id="local-page"
-              type="number"
-              class="input input-bordered"
-              value="1"
-              min="1"
-            />
-          </label>
-          <div class="flex flex-wrap gap-2">
-            <button id="btn-load-local" class="btn btn-outline">
-              Lay email (pagination)
-            </button>
-            <button id="btn-load-local-all" class="btn btn-outline">
-              Lay tat ca email da luu
-            </button>
+        <div class="card-body space-y-2">
+          <h3 class="font-semibold">Admin emails (Bearer admin token)</h3>
+          <div class="grid gap-2 md:grid-cols-2">
+            <input id="admin-email-account" class="input input-bordered" placeholder="accountId" />
+            <input id="admin-email-label" class="input input-bordered" placeholder="labelId" />
+            <input id="admin-email-keyword" class="input input-bordered" placeholder="keyword" />
+            <input id="admin-email-order-col" class="input input-bordered" placeholder="order_col" />
+            <select id="admin-email-order-dir" class="select select-bordered"><option>ASC</option><option selected>DESC</option></select>
+            <input id="admin-email-page" type="number" value="1" class="input input-bordered" />
+            <input id="admin-email-limit" type="number" value="10" class="input input-bordered" />
           </div>
-          <pre
-            id="local-output"
-            class="bg-base-200 rounded p-3 text-sm h-64 overflow-auto"
-          ></pre>
+          <div class="flex gap-2 flex-wrap">
+            <button id="btn-admin-emails-list" class="btn btn-outline">List</button>
+            <button id="btn-admin-emails-get" class="btn btn-outline">Get by ID</button>
+            <button id="btn-admin-emails-delete" class="btn btn-outline btn-error">Delete</button>
+          </div>
+          <input id="admin-email-id" class="input input-bordered" placeholder="Email ID (get/delete)" />
+          <pre id="admin-emails-output" class="bg-base-200 rounded p-2 text-xs h-48 overflow-auto"></pre>
         </div>
       </div>
+    </div>
 
-      <div class="card bg-base-100 shadow">
-        <div class="card-body">
-          <h2 class="text-lg font-semibold mb-2">Log</h2>
-          <pre id="log-output" class="bg-base-200 rounded p-3 text-sm"></pre>
-        </div>
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <h3 class="font-semibold mb-2">Log</h3>
+        <pre id="log-output" class="bg-base-200 rounded p-2 text-xs"></pre>
       </div>
+    </div>
+  </div>
 
-    <script>
-      const apiBaseInput = document.getElementById('api-base');
-      const logOutput = document.getElementById('log-output');
-      const redirectInput = document.getElementById('redirect-uri');
-      let gmailToken = '';
+  <script>
+    const apiBaseInput = document.getElementById('api-base');
+    const logOutput = document.getElementById('log-output');
+    const redirectInput = document.getElementById('redirect-uri');
+    const adminTokenInput = document.getElementById('admin-token');
+    let gmailToken = '';
+    const sessionAlert = document.getElementById('session-alert');
+    const sessionEmail = document.getElementById('session-email');
+    const sessionExp = document.getElementById('session-exp');
+    const SESSION_TOKEN_KEY = 'gmailSessionToken';
+    const SESSION_META_KEY = 'gmailSessionMeta';
+    const ADMIN_TOKEN_KEY = 'adminAccessToken';
 
-      const sessionAlert = document.getElementById('session-alert');
-      const sessionEmail = document.getElementById('session-email');
-      const sessionExp = document.getElementById('session-exp');
-      const copyTokenBtn = document.getElementById('btn-copy-token');
-      const logoutBtn = document.getElementById('btn-logout');
-      const refreshSessionBtn = document.getElementById('btn-refresh-session');
-      const SESSION_TOKEN_KEY = 'gmailSessionToken';
-      const SESSION_META_KEY = 'gmailSessionMeta';
+    const setLog = (data) => (logOutput.textContent = JSON.stringify(data, null, 2));
 
-      const setLog = (data) => {
-        logOutput.textContent = JSON.stringify(data, null, 2);
-      };
+    const fetchJson = async (path, { method = 'GET', body, auth = 'gmail' } = {}) => {
+      const apiBase = apiBaseInput.value.trim();
+      if (!apiBase) throw new Error('Missing API base URL');
+      const headers = { 'Content-Type': 'application/json' };
+      if (auth === 'gmail') {
+        if (!gmailToken) throw new Error('Not logged in to Gmail module');
+        headers.Authorization = `Bearer ${gmailToken}`;
+      }
+      if (auth === 'admin') {
+        const token = adminTokenInput.value.trim();
+        if (!token) throw new Error('Missing admin access token');
+        headers.Authorization = `Bearer ${token}`;
+      }
+      const res = await fetch(`${apiBase}${path}`, { method, headers, body });
+      const text = await res.text();
+      if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
+      return text ? JSON.parse(text) : null;
+    };
 
-      const fetchJson = async (
-        path,
-        { method = 'GET', body, auth = true } = {},
-      ) => {
-        const apiBase = apiBaseInput.value.trim();
-        if (!apiBase) throw new Error('Chưa nhập API base URL');
+    const persistSession = (token, meta) => {
+      gmailToken = token;
+      localStorage.setItem(SESSION_TOKEN_KEY, token);
+      localStorage.setItem(SESSION_META_KEY, JSON.stringify(meta));
+      sessionAlert.classList.remove('hidden');
+      sessionEmail.textContent = meta.email ?? '';
+      sessionExp.textContent = meta.expiresIn ?? '';
+    };
 
-        const headers = { 'Content-Type': 'application/json' };
-        if (auth) {
-          if (!gmailToken) throw new Error('Chưa đăng nhập Gmail module');
-          headers.Authorization = `Bearer ${gmailToken}`;
-        }
-
-        const res = await fetch(`${apiBase}${path}`, {
-          method,
-          headers,
-          body,
-        });
-
-          const text = await res.text();
-          if (!res.ok) {
-            throw new Error(text || `HTTP ${res.status}`);
-          }
-          return text ? JSON.parse(text) : null;
-        };
-
-      const persistSession = (token, meta) => {
-        gmailToken = token;
-        localStorage.setItem(SESSION_TOKEN_KEY, token);
-        localStorage.setItem(SESSION_META_KEY, JSON.stringify(meta));
-        sessionAlert.classList.remove('hidden');
-        sessionEmail.textContent = meta.email ?? '';
-        sessionExp.textContent = meta.expiresIn ?? '';
-      };
-
-      const restoreSession = () => {
-        const storedToken = localStorage.getItem(SESSION_TOKEN_KEY);
-        if (!storedToken) return;
-        const metaRaw = localStorage.getItem(SESSION_META_KEY);
-        if (!metaRaw) return;
+    const restoreSession = () => {
+      const token = localStorage.getItem(SESSION_TOKEN_KEY);
+      const metaRaw = localStorage.getItem(SESSION_META_KEY);
+      if (token && metaRaw) {
         try {
-          const meta = JSON.parse(metaRaw);
-          persistSession(storedToken, meta);
-          setLog({ message: 'Khôi phục phiên Gmail từ localStorage', meta });
-        } catch (err) {
-          console.warn('Failed to parse Gmail session meta', err);
-        }
+          persistSession(token, JSON.parse(metaRaw));
+          setLog({ message: 'Restored Gmail session' });
+        } catch {}
+      }
+      const admin = localStorage.getItem(ADMIN_TOKEN_KEY);
+      if (admin) adminTokenInput.value = admin;
+    };
+
+    const clearSession = () => {
+      gmailToken = '';
+      localStorage.removeItem(SESSION_TOKEN_KEY);
+      localStorage.removeItem(SESSION_META_KEY);
+      sessionAlert.classList.add('hidden');
+    };
+
+    const loginWithCode = async (code) => {
+      try {
+        const data = await fetchJson('/email/login', { method: 'POST', body: JSON.stringify({ code }), auth: null });
+        persistSession(data.token, { email: data.account.email, expiresIn: data.expiresIn });
+        setLog(data);
+      } catch (err) {
+        setLog({ error: err.message });
+      }
+    };
+
+    const autoConsumeCode = () => {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      if (!code) return;
+      document.getElementById('oauth-code').value = code;
+      loginWithCode(code);
+      params.delete('code'); params.delete('scope');
+      const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
+      window.history.replaceState({}, '', newUrl);
+    };
+
+    document.getElementById('btn-get-oauth').onclick = async () => {
+      try {
+        const params = new URLSearchParams();
+        const state = document.getElementById('oauth-state').value.trim();
+        const force = document.getElementById('force-consent').checked;
+        if (state) params.set('state', state);
+        if (force) params.set('forceConsent', 'true');
+        const data = await fetchJson(`/email/oauth-url${params.size ? `?${params}` : ''}`, { auth: null });
+        const redirect = redirectInput.value.trim();
+        if (redirect && !data.url.includes(redirect)) console.warn('Redirect URI mismatch');
+        window.open(data.url, '_blank');
+        setLog(data);
+      } catch (err) { setLog({ error: err.message }); }
+    };
+
+    document.getElementById('btn-login').onclick = () => {
+      const code = document.getElementById('oauth-code').value.trim();
+      if (!code) return alert('Enter code');
+      loginWithCode(code);
+    };
+
+    document.getElementById('btn-copy-token').onclick = async () => {
+      if (!gmailToken) return;
+      await navigator.clipboard.writeText(gmailToken);
+      alert('Copied token');
+    };
+    document.getElementById('btn-logout').onclick = () => { clearSession(); setLog({ message: 'Logged out' }); };
+    document.getElementById('btn-refresh-session').onclick = async () => {
+      if (!gmailToken) return alert('No session');
+      try {
+        const data = await fetchJson('/email/session/refresh', { method: 'POST' });
+        persistSession(data.token, { email: data.account.email, expiresIn: data.expiresIn });
+        setLog({ message: 'Refreshed session' });
+      } catch (err) { clearSession(); setLog({ error: err.message }); }
+    };
+
+    document.getElementById('btn-load-messages').onclick = async () => {
+      try { const data = await fetchJson('/email/messages'); document.getElementById('messages-output').textContent = JSON.stringify(data, null, 2); setLog({ message: 'Pulled messages', count: data?.length ?? 0 }); }
+      catch (err) { setLog({ error: err.message }); }
+    };
+
+    document.getElementById('btn-load-labels').onclick = async () => {
+      try { const data = await fetchJson('/email/labels'); document.getElementById('labels-output').textContent = JSON.stringify(data, null, 2); setLog({ message: 'Loaded labels' }); }
+      catch (err) { setLog({ error: err.message }); }
+    };
+
+    document.getElementById('btn-create-label').onclick = async () => {
+      const name = document.getElementById('label-name').value.trim();
+      if (!name) return alert('Label name required');
+      try { const data = await fetchJson('/email/labels', { method: 'POST', body: JSON.stringify({ name }) }); setLog(data); document.getElementById('btn-load-labels').click(); }
+      catch (err) { setLog({ error: err.message }); }
+    };
+
+    document.getElementById('btn-assign-label').onclick = async () => {
+      const messageId = document.getElementById('label-message-id').value.trim();
+      const labelId = document.getElementById('label-id').value.trim();
+      if (!messageId || !labelId) return alert('messageId + labelId required');
+      try { const data = await fetchJson('/email/labels/assign', { method: 'POST', body: JSON.stringify({ messageId, labelId }) }); setLog(data); }
+      catch (err) { setLog({ error: err.message }); }
+    };
+
+    document.getElementById('btn-load-local').onclick = async () => {
+      try {
+        const params = new URLSearchParams();
+        const limit = document.getElementById('local-limit').value;
+        const page = document.getElementById('local-page').value;
+        const keyword = document.getElementById('local-keyword').value.trim();
+        const orderCol = document.getElementById('local-order-col').value.trim();
+        const orderDir = document.getElementById('local-order-dir').value.trim();
+        if (limit) params.set('limit', limit);
+        if (page) params.set('page', page);
+        if (keyword) params.set('keyword', keyword);
+        if (orderCol) params.set('order_col', orderCol);
+        if (orderDir) params.set('order_dir', orderDir);
+        const data = await fetchJson(`/email/email${params.size ? `?${params}` : ''}`);
+        document.getElementById('local-output').textContent = JSON.stringify(data, null, 2);
+        setLog({ message: 'Stored emails', total: data?.pagination?.total });
+      } catch (err) { setLog({ error: err.message }); }
+    };
+
+    document.getElementById('btn-load-local-all').onclick = async () => {
+      try { const data = await fetchJson('/email/emailAll'); document.getElementById('local-output').textContent = JSON.stringify(data, null, 2); setLog({ message: 'All stored emails', count: data.length }); }
+      catch (err) { setLog({ error: err.message }); }
+    };
+
+    document.getElementById('btn-send-reply').onclick = async () => {
+      const payload = {
+        threadId: document.getElementById('reply-thread').value.trim(),
+        messageId: document.getElementById('reply-message-id').value.trim(),
+        to: document.getElementById('reply-to').value.trim(),
+        subject: document.getElementById('reply-subject').value.trim(),
+        body: document.getElementById('reply-body').value,
       };
+      if (!payload.threadId || !payload.to) return alert('threadId and to required');
+      try { const data = await fetchJson('/email/messages/reply', { method: 'POST', body: JSON.stringify(payload) }); document.getElementById('reply-output').textContent = JSON.stringify(data, null, 2); setLog(data); }
+      catch (err) { setLog({ error: err.message }); }
+    };
 
-      const clearSession = () => {
-        gmailToken = '';
-        localStorage.removeItem(SESSION_TOKEN_KEY);
-        localStorage.removeItem(SESSION_META_KEY);
-        sessionAlert.classList.add('hidden');
+    // Admin labels
+    document.getElementById('btn-admin-labels-list').onclick = async () => {
+      try {
+        const params = new URLSearchParams();
+        const accountId = document.getElementById('admin-label-account').value.trim();
+        const keyword = document.getElementById('admin-label-keyword').value.trim();
+        const page = document.getElementById('admin-label-page').value;
+        const limit = document.getElementById('admin-label-limit').value;
+        if (accountId) params.set('accountId', accountId);
+        if (keyword) params.set('keyword', keyword);
+        if (page) params.set('page', page);
+        if (limit) params.set('limit', limit);
+        const data = await fetchJson(`/email/admin/labels${params.size ? `?${params}` : ''}`, { auth: 'admin' });
+        document.getElementById('admin-labels-output').textContent = JSON.stringify(data, null, 2);
+        setLog({ message: 'Admin labels list' });
+      } catch (err) { setLog({ error: err.message }); }
+    };
+
+    document.getElementById('btn-admin-labels-create').onclick = async () => {
+      const body = {
+        gmailAccountId: document.getElementById('admin-label-account').value.trim(),
+        gmailLabelId: document.getElementById('admin-gmail-label-id').value.trim(),
+        name: document.getElementById('admin-label-name').value.trim(),
+        type: document.getElementById('admin-label-type').value.trim() || undefined,
+        color: document.getElementById('admin-label-color').value.trim() || undefined,
       };
+      if (!body.gmailAccountId || !body.gmailLabelId || !body.name) return alert('accountId, gmailLabelId, name required');
+      try { const data = await fetchJson('/email/admin/labels', { method: 'POST', body: JSON.stringify(body), auth: 'admin' }); setLog(data); }
+      catch (err) { setLog({ error: err.message }); }
+    };
 
-      const loginWithCode = async (code) => {
-        try {
-          const data = await fetchJson('/email/login', {
-            method: 'POST',
-            body: JSON.stringify({ code }),
-            auth: false,
-          });
-          persistSession(data.token, {
-            email: data.account.email,
-            expiresIn: data.expiresIn,
-            savedAt: Date.now(),
-          });
-          setLog(data);
-        } catch (err) {
-          setLog({ error: err.message });
-        }
+    document.getElementById('btn-admin-labels-update').onclick = async () => {
+      const id = document.getElementById('admin-label-id').value.trim();
+      if (!id) return alert('Label ID required');
+      const body = {
+        name: document.getElementById('admin-label-name').value.trim() || undefined,
+        type: document.getElementById('admin-label-type').value.trim() || undefined,
+        color: document.getElementById('admin-label-color').value.trim() || undefined,
       };
+      try { const data = await fetchJson(`/email/admin/labels/${id}`, { method: 'PUT', body: JSON.stringify(body), auth: 'admin' }); setLog(data); }
+      catch (err) { setLog({ error: err.message }); }
+    };
 
-      const callRefreshSession = async () => {
-        try {
-          const data = await fetchJson('/email/session/refresh', {
-            method: 'POST',
-          });
-          persistSession(data.token, {
-            email: data.account.email,
-            expiresIn: data.expiresIn,
-            savedAt: Date.now(),
-          });
-          setLog({
-            message: 'Đã làm mới session từ token hiện tại',
-            account: data.account,
-          });
-        } catch (err) {
-          clearSession();
-          setLog({ error: err.message });
-          alert(
-            'Session cũ không còn hợp lệ. Vui lòng đăng nhập lại bằng Google.',
-          );
-        }
-      };
+    document.getElementById('btn-admin-labels-delete').onclick = async () => {
+      const id = document.getElementById('admin-label-id').value.trim();
+      if (!id) return alert('Label ID required');
+      try { const data = await fetchJson(`/email/admin/labels/${id}`, { method: 'DELETE', auth: 'admin' }); setLog(data); }
+      catch (err) { setLog({ error: err.message }); }
+    };
 
-      document
-        .getElementById('btn-get-oauth')
-        .addEventListener('click', async () => {
-          try {
-            const state = document.getElementById('oauth-state').value.trim();
-            const forceConsent =
-              document.getElementById('force-consent').checked;
-            const params = new URLSearchParams();
-            if (state) params.set('state', state);
-            if (forceConsent) params.set('forceConsent', 'true');
-            const query = params.toString();
-            const data = await fetchJson(
-              `/email/oauth-url${query ? `?${query}` : ''}`,
-              { auth: false },
-            );
-            const redirectUri = redirectInput.value.trim();
-            if (redirectUri && !data.url.includes(redirectUri)) {
-              console.warn(
-                'Redirect URI trả về không trùng với input, kiểm tra cấu hình Google.',
-              );
-            }
-            window.open(data.url, '_blank');
-            setLog(data);
-          } catch (err) {
-            setLog({ error: err.message });
-          }
-        });
+    // Admin emails
+    document.getElementById('btn-admin-emails-list').onclick = async () => {
+      try {
+        const params = new URLSearchParams();
+        const accountId = document.getElementById('admin-email-account').value.trim();
+        const labelId = document.getElementById('admin-email-label').value.trim();
+        const keyword = document.getElementById('admin-email-keyword').value.trim();
+        const orderCol = document.getElementById('admin-email-order-col').value.trim();
+        const orderDir = document.getElementById('admin-email-order-dir').value.trim();
+        const page = document.getElementById('admin-email-page').value;
+        const limit = document.getElementById('admin-email-limit').value;
+        if (accountId) params.set('accountId', accountId);
+        if (labelId) params.set('labelId', labelId);
+        if (keyword) params.set('keyword', keyword);
+        if (orderCol) params.set('order_col', orderCol);
+        if (orderDir) params.set('order_dir', orderDir);
+        if (page) params.set('page', page);
+        if (limit) params.set('limit', limit);
+        const data = await fetchJson(`/email/admin/emails${params.size ? `?${params}` : ''}`, { auth: 'admin' });
+        document.getElementById('admin-emails-output').textContent = JSON.stringify(data, null, 2);
+        setLog({ message: 'Admin emails list' });
+      } catch (err) { setLog({ error: err.message }); }
+    };
 
-      document
-        .getElementById('btn-login')
-        .addEventListener('click', () => {
-          const code = document.getElementById('oauth-code').value.trim();
-          if (!code) return alert('Chưa nhập code');
-          loginWithCode(code);
-        });
+    document.getElementById('btn-admin-emails-get').onclick = async () => {
+      const id = document.getElementById('admin-email-id').value.trim();
+      if (!id) return alert('Email ID required');
+      try { const data = await fetchJson(`/email/admin/emails/${id}`, { auth: 'admin' }); document.getElementById('admin-emails-output').textContent = JSON.stringify(data, null, 2); setLog({ message: 'Admin email detail' }); }
+      catch (err) { setLog({ error: err.message }); }
+    };
 
-      copyTokenBtn.addEventListener('click', async () => {
-        if (!gmailToken) return;
-        await navigator.clipboard.writeText(gmailToken);
-        alert('Đã copy Gmail token.');
-      });
+    document.getElementById('btn-admin-emails-delete').onclick = async () => {
+      const id = document.getElementById('admin-email-id').value.trim();
+      if (!id) return alert('Email ID required');
+      try { const data = await fetchJson(`/email/admin/emails/${id}`, { method: 'DELETE', auth: 'admin' }); setLog(data); }
+      catch (err) { setLog({ error: err.message }); }
+    };
 
-      logoutBtn.addEventListener('click', () => {
-        clearSession();
-        setLog({ message: 'Đã xoá token Gmail hiện tại' });
-      });
+    document.getElementById('btn-save-admin').onclick = () => {
+      localStorage.setItem(ADMIN_TOKEN_KEY, adminTokenInput.value.trim());
+      setLog({ message: 'Saved admin token' });
+    };
+    document.getElementById('btn-clear-admin').onclick = () => {
+      adminTokenInput.value = '';
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+      setLog({ message: 'Cleared admin token' });
+    };
 
-      refreshSessionBtn.addEventListener('click', () => {
-        if (!gmailToken) {
-          alert('Chưa có session để làm mới');
-          return;
-        }
-        callRefreshSession();
-      });
-
-      const autoConsumeCode = () => {
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        if (!code) return;
-        document.getElementById('oauth-code').value = code;
-        loginWithCode(code);
-        params.delete('code');
-        params.delete('scope');
-        const newUrl =
-          window.location.pathname +
-          (params.toString() ? `?${params.toString()}` : '');
-        window.history.replaceState({}, '', newUrl);
-      };
-
-      restoreSession();
-      autoConsumeCode();
-
-      document
-        .getElementById('btn-load-messages')
-        .addEventListener('click', async () => {
-          try {
-            const data = await fetchJson(`/email/messages`);
-            document.getElementById('messages-output').textContent =
-              JSON.stringify(data, null, 2);
-            setLog(data);
-          } catch (err) {
-            setLog({ error: err.message });
-          }
-        });
-
-      document
-        .getElementById('btn-load-labels')
-        .addEventListener('click', async () => {
-          try {
-            const data = await fetchJson('/email/labels');
-            document.getElementById('labels-output').textContent =
-              JSON.stringify(data, null, 2);
-            setLog(data);
-          } catch (err) {
-            setLog({ error: err.message });
-          }
-        });
-
-      document
-        .getElementById('btn-load-local')
-        .addEventListener('click', async () => {
-          try {
-            const limit = Number(document.getElementById('local-limit').value);
-            const page = Number(document.getElementById('local-page').value);
-            const params = new URLSearchParams();
-            if (limit) params.set('limit', String(limit));
-            if (page) params.set('page', String(page));
-            const data = await fetchJson(`/email/email${params.toString() ? `?${params}` : ''}`);
-            document.getElementById('local-output').textContent =
-              JSON.stringify(data, null, 2);
-            setLog({ message: 'Fetched stored emails', count: data.length });
-          } catch (err) {
-            setLog({ error: err.message });
-          }
-        });
-      document
-        .getElementById('btn-load-local-all')
-        .addEventListener('click', async () => {
-          try {
-            const data = await fetchJson(`/email/emailAll`);
-            document.getElementById('local-output').textContent =
-              JSON.stringify(data, null, 2);
-            setLog({
-              message: 'Fetched all stored emails',
-              count: data.length,
-            });
-          } catch (err) {
-            setLog({ error: err.message });
-          }
-        });
-
-      document
-        .getElementById('btn-create-label')
-        .addEventListener('click', async () => {
-          const name = document.getElementById('label-name').value.trim();
-          if (!name) return alert('Nhap ten label');
-          try {
-            const data = await fetchJson('/email/labels', {
-              method: 'POST',
-              body: JSON.stringify({ name }),
-            });
-            setLog(data);
-            document.getElementById('btn-load-labels').click();
-          } catch (err) {
-            setLog({ error: err.message });
-          }
-        });
-
-      document
-        .getElementById('btn-assign-label')
-        .addEventListener('click', async () => {
-          const messageId = document
-            .getElementById('label-message-id')
-            .value.trim();
-          const labelId = document.getElementById('label-id').value.trim();
-          if (!messageId || !labelId) {
-            return alert('Nhap messageId va labelId');
-          }
-          try {
-            const data = await fetchJson('/email/labels/assign', {
-              method: 'POST',
-              body: JSON.stringify({ messageId, labelId }),
-            });
-            setLog(data);
-          } catch (err) {
-            setLog({ error: err.message });
-          }
-        });
-
-      document
-        .getElementById('btn-send-reply')
-        .addEventListener('click', async () => {
-          const payload = {
-            threadId: document.getElementById('reply-thread').value.trim(),
-            messageId: document.getElementById('reply-message-id').value.trim(),
-            to: document.getElementById('reply-to').value.trim(),
-            subject: document.getElementById('reply-subject').value.trim(),
-            body: document.getElementById('reply-body').value,
-          };
-          if (!payload.threadId || !payload.to) {
-            return alert('threadId và email người nhận là bắt buộc');
-          }
-          try {
-            const data = await fetchJson('/email/messages/reply', {
-              method: 'POST',
-              body: JSON.stringify(payload),
-            });
-            document.getElementById('reply-output').textContent =
-              JSON.stringify(data, null, 2);
-            setLog(data);
-          } catch (err) {
-            setLog({ error: err.message });
-          }
-        });
-    </script>
-  </body>
+    restoreSession();
+    autoConsumeCode();
+  </script>
+</body>
 </html>
-
-
-
-
-
-
