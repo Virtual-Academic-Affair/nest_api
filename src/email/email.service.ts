@@ -48,7 +48,7 @@ export class EmailService {
       this.configService.get<string>('GMAIL_SESSION_SECRET') ?? '';
     if (!this.sessionSecret) {
       throw new ServiceUnavailableException(
-        'Thiếu cấu hình GMAIL_SESSION_SECRET.',
+        'Thiếu EMAIL_SESSION_SECRET configuration.',
       );
     }
     this.sessionTtl =
@@ -83,7 +83,7 @@ export class EmailService {
 
     if (!profile.emailAddress) {
       throw new ServiceUnavailableException(
-        'Không lấy được email từ Gmail profile.',
+        'Unable to retrieve email from Email profile.',
       );
     }
 
@@ -96,7 +96,7 @@ export class EmailService {
       ![Role.Admin].includes(user.role as Role)
     ) {
       throw new ForbiddenException(
-        'Email này chưa được cấp quyền sử dụng module Gmail.',
+        'This email does not have permission to use the Gmail module.',
       );
     }
 
@@ -110,7 +110,7 @@ export class EmailService {
 
     if (!refreshToken) {
       throw new ServiceUnavailableException(
-        'Google không trả refresh token. Vui lòng chọn "Yêu cầu cấp quyền lại" và thử lại.',
+        'Google did not return a refresh token. Please select "Request consent again" and try again.',
       );
     }
 
@@ -187,7 +187,7 @@ export class EmailService {
       where: { id: payload.accountId },
     });
     if (!account) {
-      throw new NotFoundException('Không tìm thấy tài khoản Gmail.');
+      throw new NotFoundException('Email account not found.');
     }
     return account;
   }
@@ -210,7 +210,7 @@ export class EmailService {
     });
 
     if (!email) {
-      throw new NotFoundException('Không tìm thấy email với messageId này.');
+      throw new NotFoundException('Email not found with this messageId.');
     }
 
     return email.labels ?? [];
@@ -346,7 +346,7 @@ export class EmailService {
 
     if (!clientId || !clientSecret || !redirectUri) {
       throw new ServiceUnavailableException(
-        'Thiếu cấu hình GMAIL_CLIENT_ID/SECRET/REDIRECT_URI.',
+        'Missing GMAIL_CLIENT_ID/SECRET/REDIRECT_URI configuration.',
       );
     }
 

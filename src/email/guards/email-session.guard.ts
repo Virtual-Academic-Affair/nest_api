@@ -24,15 +24,15 @@ export class EmailSessionGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const token = this.extractToken(request);
     if (!token) {
-      throw new UnauthorizedException('Thieu Gmail session token.');
+      throw new UnauthorizedException('Missing Gmail session token.');
     }
 
     const account = await this.emailService.validateSession(token).catch(() => {
-      throw new UnauthorizedException('Gmail session token khong hop le.');
+      throw new UnauthorizedException('Invalid Gmail session token.');
     });
 
     if (!account.user || account.user.role !== Role.Admin) {
-      throw new ForbiddenException('Yeu cau quyen admin de dung Gmail module.');
+      throw new ForbiddenException('Admin role is required to use the Email module.');
     }
 
     request.gmailAccount = account;
