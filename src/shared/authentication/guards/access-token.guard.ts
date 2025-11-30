@@ -9,11 +9,11 @@ import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import jwtConfig from '@shared/config/jwt.config';
 import { Request } from 'express';
-import { REQUEST_USER_KEY } from '@shared/shared.constants';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '@authentication/entities/user.entity';
-import { Role } from '@shared/authorization/enums/role.enum';
+
+export const REQUEST_USER_KEY = 'user';
 
 @Injectable()
 export class AccessTokenGuard implements CanActivate {
@@ -38,16 +38,8 @@ export class AccessTokenGuard implements CanActivate {
 
     const user = await this.usersRepository.findOneBy({ id: payload.sub });
 
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    if (user.role !== Role.Admin) {
-      throw new UnauthorizedException('Only admin users are allowed');
-    }
-
-    if (!user.isActive) {
-      throw new UnauthorizedException('User is not active');
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User not found or inactive');
     }
 
     request[REQUEST_USER_KEY] = payload;
@@ -55,7 +47,7 @@ export class AccessTokenGuard implements CanActivate {
   }
 
   private extractTokenFromHeader(request: Request): string | undefined {
-    const [_, token] = request.headers.authorization?.split(' ') ?? [];
+    const [, token] = request.headers.authorization?.split(' ') ?? [];
     return token;
   }
 }

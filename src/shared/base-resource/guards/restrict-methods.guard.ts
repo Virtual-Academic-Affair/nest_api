@@ -20,7 +20,9 @@ export class RestrictMethodsGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    if (!options) return true;
+    if (!options) {
+      return true;
+    }
 
     const handler = context.getHandler();
     const methodName = handler.name;
@@ -37,12 +39,16 @@ export class RestrictMethodsGuard implements CanActivate {
   }
 
   private checkAllowOnly(current: string, allowed: string[]): boolean {
-    if (!allowed.includes(current)) throw new ForbiddenException();
+    if (!allowed.includes(current)) {
+      throw new ForbiddenException();
+    }
     return true;
   }
 
   private checkExcept(current: string, denied: string[]): boolean {
-    if (denied.includes(current)) throw new ForbiddenException();
+    if (denied.includes(current)) {
+      throw new ForbiddenException();
+    }
     return true;
   }
 }
