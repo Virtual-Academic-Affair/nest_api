@@ -25,6 +25,10 @@ export class AuthenticationService {
   }
 
   async generateTokens(user: User) {
+    if (!user.isActive) {
+      throw new UnauthorizedException('User inactive');
+    }
+
     const accessToken = await this.signToken<Partial<ActiveUserData>>(
       user.id,
       this.jwtConfiguration.accessTokenTtl,

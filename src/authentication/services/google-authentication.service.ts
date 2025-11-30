@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  OnModuleInit,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
 import { AuthenticationService } from './authentication.service';
@@ -54,7 +50,6 @@ export class GoogleAuthenticationService implements OnModuleInit {
       name: payload.name,
       picture: payload.picture,
       role: isAdmin ? Role.Admin : Role.Student,
-      isActive: true,
     };
 
     if (!user) {

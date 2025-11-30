@@ -11,22 +11,26 @@ export class SettingService {
   ) {}
 
   async get<T = any>(key: string): Promise<T | null> {
+    const normalizedKey = key.toLowerCase();
     const setting = await this.settingRepository.findOne({
-      where: { key: key.toUpperCase() },
+      where: { key: normalizedKey },
     });
-
     return setting ? (setting.value as T) : null;
   }
 
-  async update(key: string, value: any, isPartial = true): Promise<Setting> {
-    const upperKey = key.toUpperCase();
+  async updateOrCreate(
+    key: string,
+    value: any,
+    isPartial = true,
+  ): Promise<Setting> {
+    const normalizedKey = key.toLowerCase();
     let setting = await this.settingRepository.findOne({
-      where: { key: upperKey },
+      where: { key: normalizedKey },
     });
 
     if (!setting) {
       setting = this.settingRepository.create({
-        key: upperKey,
+        key: normalizedKey,
         value: null,
       });
     }

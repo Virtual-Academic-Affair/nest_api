@@ -19,9 +19,9 @@ export class Setting {
 
   @BeforeInsert()
   @BeforeUpdate()
-  transformKey() {
+  normalizeKey() {
     if (this.key) {
-      this.key = this.key.toLocaleLowerCase();
+      this.key = this.key.toLowerCase();
     }
   }
 }
