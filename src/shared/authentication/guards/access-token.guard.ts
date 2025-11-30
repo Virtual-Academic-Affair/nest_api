@@ -9,7 +9,7 @@ import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import jwtConfig from '@shared/config/jwt.config';
 import { Request } from 'express';
-import { REQUEST_USER_KEY } from '@shared/shared.constants';
+import { REQUEST_USER_KEY } from '@shared/constants/shared.constants';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '@authentication/entities/user.entity';
