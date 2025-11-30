@@ -10,10 +10,12 @@ export class SettingService {
     private readonly settingRepository: Repository<Setting>,
   ) {}
 
-  async get(key: string): Promise<Setting> {
-    return await this.settingRepository.findOne({
+  async get<T = any>(key: string): Promise<T | null> {
+    const setting = await this.settingRepository.findOne({
       where: { key: key.toUpperCase() },
     });
+
+    return setting ? (setting.value as T) : null;
   }
 
   async update(key: string, value: any, isPartial = true): Promise<Setting> {

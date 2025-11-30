@@ -5,13 +5,13 @@ import { GoogleAuthenticationService } from '../services/google-authentication.s
 import { GoogleCodeDto } from '../dto/google-code.dto';
 import { ActiveUser } from '@shared/decorators/active-user.decorator';
 import { ActiveUserData } from '@shared/interfaces/active-user-data.interface';
-import { UsersService } from '../services/users.service';
+import { UserService } from '../services/user.service';
 
 @Controller('authentication')
 export class AuthenticationController {
   constructor(
     private readonly googleAuthService: GoogleAuthenticationService,
-    private readonly usersService: UsersService,
+    private readonly userService: UserService,
   ) {}
 
   @Post('google')
@@ -23,6 +23,6 @@ export class AuthenticationController {
   @Get('me')
   @Auth(AuthType.Bearer)
   async getMe(@ActiveUser() user: ActiveUserData) {
-    return this.usersService.findOne(user.sub);
+    return this.userService.findOne(user.sub);
   }
 }

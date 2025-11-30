@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '@authentication/entities/user.entity';
 import { Role } from '@shared/authorization/enums/role.enum';
+import { SettingService } from '@shared/services/setting.service';
 
 @Injectable()
 export class GoogleAuthenticationService implements OnModuleInit {
@@ -19,6 +20,7 @@ export class GoogleAuthenticationService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly authService: AuthenticationService,
     @InjectRepository(User) private readonly userRepository: Repository<User>,
+    private readonly settingService: SettingService,
   ) {}
 
   onModuleInit() {
@@ -36,29 +38,36 @@ export class GoogleAuthenticationService implements OnModuleInit {
     });
     const payload = loginTicket.getPayload();
 
-    const user = await this.userRepository.findOneBy({
+    const authSetting = await this.settingService.get<{
+      adminEmails: string[];
+    }>('AUTHENTICATION');
+
+    const adminEmails = authSetting?.adminEmails ?? [];
+    const isAdmin = adminEmails.includes(payload.email);
+
+    let user = await this.userRepository.findOneBy({
       email: payload.email,
     });
 
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    if (user.role !== Role.Admin) {
-      throw new UnauthorizedException('Only admin users are allowed');
-    }
-
-    if (!user.isActive) {
-      throw new UnauthorizedException('User is not active');
-    }
-
-    Object.assign(user, {
+    const userData = {
       googleId: payload.sub,
       name: payload.name,
       picture: payload.picture,
-    });
+      role: isAdmin ? Role.Admin : Role.Student,
+      isActive: true,
+    };
+
+    if (!user) {
+      user = this.userRepository.create({
+        email: payload.email,
+        ...userData,
+      });
+    } else {
+      Object.assign(user, userData);
+    }
 
     await this.userRepository.save(user);
+
     return this.authService.generateTokens(user);
   }
 }

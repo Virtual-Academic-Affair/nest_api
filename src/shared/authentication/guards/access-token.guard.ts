@@ -42,10 +42,6 @@ export class AccessTokenGuard implements CanActivate {
       throw new UnauthorizedException('User not found');
     }
 
-    if (user.role !== Role.Admin) {
-      throw new UnauthorizedException('Only admin users are allowed');
-    }
-
     if (!user.isActive) {
       throw new UnauthorizedException('User is not active');
     }

@@ -1,5 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { UsersService } from '../services/users.service';
+import { UserService } from '../services/user.service';
 import { Auth } from '@shared/authentication/decorators/auth.decorator';
 import { AuthType } from '@shared/authentication/enums/auth-type.enum';
 import { AssignRoleDto } from '../dto/assign-role.dto';
@@ -15,9 +15,9 @@ import { RestrictMethods } from '@shared/decorators/restrict-methods.decorator';
 @Roles(Role.Admin)
 @Controller('authentication/users')
 @RestrictMethods({ except: ['delete', 'create'] })
-export class UsersController extends BaseResourceController<User> {
-  constructor(private readonly usersService: UsersService) {
-    super(usersService);
+export class UserController extends BaseResourceController<User> {
+  constructor(private readonly userService: UserService) {
+    super(userService);
   }
 
   protected getDtoClasses() {
@@ -29,6 +29,6 @@ export class UsersController extends BaseResourceController<User> {
 
   @Post('assign-role')
   assignRole(@Body() assignRoleDto: AssignRoleDto) {
-    return this.usersService.assignRole(assignRoleDto);
+    return this.userService.assignRole(assignRoleDto);
   }
 }

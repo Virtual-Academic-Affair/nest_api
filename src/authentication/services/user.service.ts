@@ -7,7 +7,7 @@ import { AssignRoleDto } from '../dto/assign-role.dto';
 import { BaseResourceService } from '@shared/services/base-resource.service';
 
 @Injectable()
-export class UsersService extends BaseResourceService<User> {
+export class UserService extends BaseResourceService<User> {
   protected repository: Repository<User>;
   protected entityName = 'user';
   protected searchableColumns = ['email', 'name'];
