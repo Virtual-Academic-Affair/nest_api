@@ -9,9 +9,9 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { BaseResourceService } from '../services/base-resource.service';
-import { BaseQueryDto } from '../dto/base-query.dto';
+import { BaseQueryDto } from '@shared/base-resource/dtos/base-query.dto';
 import { ObjectLiteral } from 'typeorm';
-import { validateDto } from '../utils/validate-dto.util';
+import { validateDto } from '@shared/base-resource/utils/validate-dto.util';
 
 export abstract class BaseResourceController<T extends ObjectLiteral> {
   protected constructor(protected readonly service: BaseResourceService<T>) {}

@@ -10,7 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '@authentication/entities/user.entity';
 import { Role } from '@shared/authorization/enums/role.enum';
-import { SettingService } from '@shared/services/setting.service';
+import { SettingService } from '@shared/setting/services/setting.service';
 
 @Injectable()
 export class GoogleAuthenticationService implements OnModuleInit {
@@ -40,7 +40,7 @@ export class GoogleAuthenticationService implements OnModuleInit {
 
     const authSetting = await this.settingService.get<{
       adminEmails: string[];
-    }>('AUTHENTICATION');
+    }>('authentication');
 
     const adminEmails = authSetting?.adminEmails ?? [];
     const isAdmin = adminEmails.includes(payload.email);

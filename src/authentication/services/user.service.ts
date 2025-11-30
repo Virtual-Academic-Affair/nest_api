@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { User } from '../entities/user.entity';
-import { UsersQueryDto } from '../dto/users/query.dto';
-import { AssignRoleDto } from '../dto/assign-role.dto';
-import { BaseResourceService } from '@shared/services/base-resource.service';
+import { UserQueryDto } from '@authentication/dtos/user/query.dto';
+import { AssignRoleDto } from '@authentication/dtos/authentication/assign-role.dto';
+import { BaseResourceService } from '@shared/base-resource/services/base-resource.service';
 
 @Injectable()
 export class UserService extends BaseResourceService<User> {
@@ -20,7 +20,7 @@ export class UserService extends BaseResourceService<User> {
 
   protected applyCustomFilters(
     queryBuilder: SelectQueryBuilder<User>,
-    { role }: UsersQueryDto,
+    { role }: UserQueryDto,
   ): void {
     role && queryBuilder.andWhere('user.role = :role', { role });
   }

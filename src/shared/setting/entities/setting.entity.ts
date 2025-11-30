@@ -21,7 +21,7 @@ export class Setting {
   @BeforeUpdate()
   transformKey() {
     if (this.key) {
-      this.key = this.key.toUpperCase();
+      this.key = this.key.toLocaleLowerCase();
     }
   }
 }

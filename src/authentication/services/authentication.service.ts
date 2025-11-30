@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import jwtConfig from '@shared/config/jwt.config';
-import { ActiveUserData } from '@shared/interfaces/active-user-data.interface';
+import { ActiveUserData } from '@shared/authentication/interfaces/active-user-data.interface';
 import { RedisService } from '@shared/services/redis.service';
 import { randomUUID } from 'crypto';
 
@@ -19,6 +19,10 @@ export class AuthenticationService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
+
+  private getRefreshTokenRedisKey(refreshTokenId: string | number): string {
+    return `refresh_token:${refreshTokenId}`;
+  }
 
   async generateTokens(user: User) {
     const accessToken = await this.signToken<Partial<ActiveUserData>>(
@@ -34,17 +38,12 @@ export class AuthenticationService {
       { refreshTokenId },
     );
 
-    const redisKey = `refresh_token:${refreshTokenId}`;
     await this.redisService.set(
-      redisKey,
+      this.getRefreshTokenRedisKey(refreshTokenId),
       user.id.toString(),
       this.jwtConfiguration.refreshTokenTtl,
     );
-
-    return {
-      accessToken,
-      refreshToken,
-    };
+    return { accessToken, refreshToken };
   }
 
   async refreshTokens(refreshToken: string) {
@@ -61,8 +60,9 @@ export class AuthenticationService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const redisKey = `refresh_token:${payload.refreshTokenId}`;
-    const userId = await this.redisService.get(redisKey);
+    const userId = await this.redisService.get(
+      this.getRefreshTokenRedisKey(payload.refreshTokenId),
+    );
 
     if (!userId) {
       throw new UnauthorizedException('Refresh token not found or expired');
@@ -76,7 +76,9 @@ export class AuthenticationService {
       throw new UnauthorizedException('User not found or inactive');
     }
 
-    await this.redisService.del(redisKey);
+    await this.redisService.del(
+      this.getRefreshTokenRedisKey(payload.refreshTokenId),
+    );
     return this.generateTokens(user);
   }
 

@@ -14,6 +14,5 @@ export interface ActiveUserData {
   /**
    * The user's role.
    */
-
   role: Role;
 }

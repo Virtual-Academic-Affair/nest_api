@@ -8,7 +8,6 @@ import { DatabaseType } from 'typeorm';
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    AuthenticationModule,
     TypeOrmModule.forRoot({
       type: process.env.DB_TYPE as DatabaseType,
       host: process.env.DB_HOST,
@@ -20,6 +19,7 @@ import { DatabaseType } from 'typeorm';
       synchronize: true,
     } as TypeOrmModuleOptions),
     SharedModule,
+    AuthenticationModule,
   ],
 })
 export class AppModule {}
