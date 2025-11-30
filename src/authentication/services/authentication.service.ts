@@ -28,7 +28,6 @@ export class AuthenticationService {
     return await this.jwtService.signAsync(
       {
         sub: userId,
-
         ...payload,
       },
       {
