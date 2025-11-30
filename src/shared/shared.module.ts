@@ -13,6 +13,7 @@ import { RolesGuard } from './authorization/guard/roles.guard';
 import { RestrictMethodsGuard } from './guards/restrict-methods.guard';
 import { Setting } from './entities/setting.entity';
 import { SettingService } from './services/setting.service';
+import { RedisService } from './services/redis.service';
 
 @Module({
   imports: [
@@ -36,7 +37,14 @@ import { SettingService } from './services/setting.service';
     },
     AccessTokenGuard,
     SettingService,
+    RedisService,
   ],
-  exports: [JwtModule, TypeOrmModule, HashingService, SettingService],
+  exports: [
+    JwtModule,
+    TypeOrmModule,
+    HashingService,
+    SettingService,
+    RedisService,
+  ],
 })
 export class SharedModule {}
