@@ -11,10 +11,12 @@ import { AuthenticationGuard } from './authentication/guards/authentication.guar
 import { AccessTokenGuard } from './authentication/guards/access-token.guard';
 import { RolesGuard } from './authorization/guard/roles.guard';
 import { RestrictMethodsGuard } from './guards/restrict-methods.guard';
+import { Setting } from './entities/setting.entity';
+import { SettingService } from './services/setting.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Setting]),
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),
   ],
@@ -33,7 +35,8 @@ import { RestrictMethodsGuard } from './guards/restrict-methods.guard';
       useClass: RestrictMethodsGuard,
     },
     AccessTokenGuard,
+    SettingService,
   ],
-  exports: [JwtModule, TypeOrmModule, HashingService],
+  exports: [JwtModule, TypeOrmModule, HashingService, SettingService],
 })
 export class SharedModule {}
