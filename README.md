@@ -15,8 +15,8 @@ Additionally this projects adds the following functionality:
 The project is organized into two main modules:
 
 - **`authentication/`**: Contains authentication-related functionality
-  - `controllers/`: Authentication controllers (Google OAuth, Users)
-  - `services/`: Authentication services (AuthenticationService, GoogleAuthenticationService, UsersService)
+  - `controllers/`: Authentication controllers (Google OAuth, User)
+  - `services/`: Authentication services (AuthenticationService, GoogleAuthenticationService, UserService)
   - `entities/`: User entity
   - `dto/`: Data transfer objects for authentication
 

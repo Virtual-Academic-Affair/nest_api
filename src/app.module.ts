@@ -11,7 +11,6 @@ import { DatabaseType } from 'typeorm';
   imports: [
     ConfigModule.forRoot(),
     ScheduleModule.forRoot(),
-    AuthenticationModule,
     TypeOrmModule.forRoot({
       type: process.env.DB_TYPE as DatabaseType,
       host: process.env.DB_HOST,
@@ -24,6 +23,7 @@ import { DatabaseType } from 'typeorm';
     } as TypeOrmModuleOptions),
     EmailModule,
     SharedModule,
+    AuthenticationModule,
   ],
 })
 export class AppModule {}
