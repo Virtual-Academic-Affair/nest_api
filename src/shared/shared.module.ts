@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '@authentication/entities/user.entity';
 import jwtConfig from '@shared/config/jwt.config';
+import rabbitmqConfig from '@shared/config/rabbitmq.config';
 import { BcryptService } from './hashing/bcrypt.service';
 import { HashingService } from './hashing/hashing.service';
 import { APP_GUARD } from '@nestjs/core';
@@ -15,6 +16,7 @@ import { Setting } from '@shared/setting/entities/setting.entity';
 import { SettingService } from './setting/services/setting.service';
 import { RedisService } from './services/redis.service';
 import redisConfig from './config/redis.config';
+import { RabbitMQService } from '@shared/services/rabbitmq.service';
 
 @Module({
   imports: [
@@ -22,6 +24,7 @@ import redisConfig from './config/redis.config';
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),
     ConfigModule.forFeature(redisConfig),
+    ConfigModule.forFeature(rabbitmqConfig),
   ],
   providers: [
     {
@@ -43,6 +46,7 @@ import redisConfig from './config/redis.config';
     AccessTokenGuard,
     SettingService,
     RedisService,
+    RabbitMQService,
   ],
   exports: [
     JwtModule,
@@ -50,6 +54,7 @@ import redisConfig from './config/redis.config';
     HashingService,
     SettingService,
     RedisService,
+    RabbitMQService,
   ],
 })
 export class SharedModule {}
