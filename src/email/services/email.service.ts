@@ -21,7 +21,7 @@ import { GmailLabel } from '../entities/email-label.entity';
 import { GmailEmail } from '../entities/email-email.entity';
 import { User } from '@authentication/entities/user.entity';
 import { Role } from '@shared/authorization/enums/role.enum';
-import { BaseQueryDto } from '@shared/dto/base-query.dto';
+import { BaseQueryDto } from '@shared/base-resource/dtos/base-query.dto';
 
 const GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.modify'];
 

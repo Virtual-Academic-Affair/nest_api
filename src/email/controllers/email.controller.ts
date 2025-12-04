@@ -11,7 +11,6 @@ import { ApiQuery, ApiTags } from '@nestjs/swagger';
 
 import { Auth } from '@shared/authentication/decorators/auth.decorator';
 import { AuthType } from '@shared/authentication/enums/auth-type.enum';
-import { BaseQueryDto } from '@shared/dto/base-query.dto';
 import { EmailService } from '../services/email.service';
 import { EmailSessionGuard } from '../guards/email-session.guard';
 import { GmailAccountCtx } from '../decorators/gmail-account.decorator';
@@ -20,6 +19,7 @@ import { RegisterGmailAccountDto } from '../dto/register-gmail-account.dto';
 import { CreateGmailLabelDto } from '../dto/create-gmail-label.dto';
 import { AddGmailLabelDto } from '../dto/add-gmail-label.dto';
 import { ReplyMailDto } from '../dto/reply-mail.dto';
+import { BaseQueryDto } from '@shared/base-resource/dtos/base-query.dto';
 
 @ApiTags('Email')
 @Auth(AuthType.None)
