@@ -101,3 +101,7 @@ $ npm run start:dev
 # production mode
 $ npm run start:prod
 ```
+
+## Documentation
+
+- **[Services Documentation](./SERVICES.md)** - RabbitMQ, Redis, Settings, ... usage guide
