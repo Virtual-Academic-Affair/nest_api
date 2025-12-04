@@ -14,7 +14,7 @@ import { AuthType } from '@shared/authentication/enums/auth-type.enum';
 import { EmailService } from '../services/email.service';
 import { EmailSessionGuard } from '../guards/email-session.guard';
 import { GmailAccountCtx } from '../decorators/gmail-account.decorator';
-import { GmailAccount } from '../entities/email-account.entity';
+import { EmailAccountContext } from '../types/email-account.type';
 import { RegisterGmailAccountDto } from '../dto/register-gmail-account.dto';
 import { CreateGmailLabelDto } from '../dto/create-gmail-label.dto';
 import { AddGmailLabelDto } from '../dto/add-gmail-label.dto';
@@ -43,7 +43,7 @@ export class EmailController {
 
   @UseGuards(EmailSessionGuard)
   @Post('session/refresh')
-  refreshSession(@GmailAccountCtx() account: GmailAccount) {
+  refreshSession(@GmailAccountCtx() account: EmailAccountContext) {
     return this.emailService.issueSessionForAccount(account);
   }
 
@@ -54,14 +54,14 @@ export class EmailController {
 
   @UseGuards(EmailSessionGuard)
   @Get('labels')
-  getLabels(@GmailAccountCtx() account: GmailAccount) {
+  getLabels(@GmailAccountCtx() account: EmailAccountContext) {
     return this.emailService.getLabels(account);
   }
 
   @UseGuards(EmailSessionGuard)
   @Get('labels/:messageId')
   getLabelsForEmail(
-    @GmailAccountCtx() account: GmailAccount,
+    @GmailAccountCtx() account: EmailAccountContext,
     @Param('messageId') messageId: string,
   ) {
     return this.emailService.getLabelsForEmail(account, messageId);
@@ -70,7 +70,7 @@ export class EmailController {
   @UseGuards(EmailSessionGuard)
   @Post('labels')
   createLabel(
-    @GmailAccountCtx() account: GmailAccount,
+    @GmailAccountCtx() account: EmailAccountContext,
     @Body() dto: CreateGmailLabelDto,
   ) {
     return this.emailService.createLabel(account, dto);
@@ -79,7 +79,7 @@ export class EmailController {
   @UseGuards(EmailSessionGuard)
   @Post('labels/assign')
   addLabel(
-    @GmailAccountCtx() account: GmailAccount,
+    @GmailAccountCtx() account: EmailAccountContext,
     @Body() dto: AddGmailLabelDto,
   ) {
     return this.emailService.addLabelToMail(account, dto);
@@ -90,7 +90,7 @@ export class EmailController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'page', required: false, type: Number })
   readMessages(
-    @GmailAccountCtx() account: GmailAccount,
+    @GmailAccountCtx() account: EmailAccountContext,
   ) {
     return this.emailService.readAllMails(account);
   }
@@ -100,7 +100,7 @@ export class EmailController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'page', required: false, type: Number })
   getEmails(
-    @GmailAccountCtx() account: GmailAccount,
+    @GmailAccountCtx() account: EmailAccountContext,
     @Query() query: BaseQueryDto,
   ) {
     return this.emailService.getStoredEmails(account, query);
@@ -108,14 +108,14 @@ export class EmailController {
 
   @UseGuards(EmailSessionGuard)
   @Get('emailAll')
-  getAllEmails(@GmailAccountCtx() account: GmailAccount) {
+  getAllEmails(@GmailAccountCtx() account: EmailAccountContext) {
     return this.emailService.getAllStoredEmails(account);
   }
 
   @UseGuards(EmailSessionGuard)
   @Post('messages/reply')
   reply(
-    @GmailAccountCtx() account: GmailAccount,
+    @GmailAccountCtx() account: EmailAccountContext,
     @Body() dto: ReplyMailDto,
   ) {
     return this.emailService.replyMail(account, dto);

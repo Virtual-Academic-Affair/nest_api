@@ -3,24 +3,21 @@ import {
   CreateDateColumn,
   Entity,
   ManyToMany,
-  ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
-import { GmailAccount } from './email-account.entity';
 import { GmailEmail } from './email-email.entity';
 
 @Entity()
-@Unique(['gmailAccount', 'gmailLabelId'])
+@Unique(['accountId', 'gmailLabelId'])
 export class GmailLabel {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => GmailAccount, (account) => account.labels, {
-    onDelete: 'CASCADE',
-  })
-  gmailAccount: GmailAccount;
+  // Single-account mode: default id to keep legacy rows valid
+  @Column({ default: 'default-email-account' })
+  accountId: string;
 
   @Column()
   gmailLabelId: string;

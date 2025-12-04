@@ -7,12 +7,12 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { EmailService } from '../services/email.service';
-import { GmailAccount } from '../entities/email-account.entity';
+import { EmailAccountContext } from '../types/email-account.type';
 import { Role } from '@shared/authorization/enums/role.enum';
 
 declare module 'express' {
   interface Request {
-    gmailAccount?: GmailAccount;
+    gmailAccount?: EmailAccountContext;
   }
 }
 

@@ -4,24 +4,20 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
-  ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
-import { GmailAccount } from './email-account.entity';
 import { GmailLabel } from './email-label.entity';
 
 @Entity()
-@Unique(['gmailAccount', 'gmailMessageId'])
+@Unique(['accountId', 'gmailMessageId'])
 export class GmailEmail {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => GmailAccount, (account) => account.emails, {
-    onDelete: 'CASCADE',
-  })
-  gmailAccount: GmailAccount;
+  @Column({ default: 'default-email-account' })
+  accountId: string;
 
   @Column()
   gmailMessageId: string;

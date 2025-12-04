@@ -16,14 +16,17 @@ import { AddGmailLabelDto } from '../dto/add-gmail-label.dto';
 import { CreateGmailLabelDto } from '../dto/create-gmail-label.dto';
 import { RegisterGmailAccountDto } from '../dto/register-gmail-account.dto';
 import { ReplyMailDto } from '../dto/reply-mail.dto';
-import { GmailAccount } from '../entities/email-account.entity';
 import { GmailLabel } from '../entities/email-label.entity';
 import { GmailEmail } from '../entities/email-email.entity';
 import { User } from '@authentication/entities/user.entity';
 import { Role } from '@shared/authorization/enums/role.enum';
 import { BaseQueryDto } from '@shared/base-resource/dtos/base-query.dto';
+import { SettingService } from '@shared/setting/services/setting.service';
+import { EmailAccountContext } from '../types/email-account.type';
 
 const GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.modify'];
+const EMAIL_ACCOUNT_SETTING_KEY = 'emailAccount';
+const EMAIL_ACCOUNT_ID = 'default-email-account';
 
 @Injectable()
 export class EmailService {
@@ -33,14 +36,13 @@ export class EmailService {
 
   constructor(
     private readonly configService: ConfigService,
-    @InjectRepository(GmailAccount)
-    private readonly gmailAccountRepo: Repository<GmailAccount>,
     @InjectRepository(GmailLabel)
     private readonly gmailLabelRepo: Repository<GmailLabel>,
     @InjectRepository(GmailEmail)
     private readonly gmailEmailRepo: Repository<GmailEmail>,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    private readonly settingService: SettingService,
     private readonly jwtService: JwtService,
   ) {
     this.sessionSecret =
@@ -71,6 +73,36 @@ export class EmailService {
     return client.generateAuthUrl(params);
   }
 
+  private async loadAccountFromSetting(): Promise<EmailAccountContext | null> {
+    const setting = await this.settingService.get<{
+      email?: string;
+      refreshToken?: string;
+      displayName?: string;
+      userId?: number;
+      lastPulledAt?: string;
+    }>(EMAIL_ACCOUNT_SETTING_KEY);
+
+    if (!setting?.email || !setting.refreshToken) {
+      return null;
+    }
+
+    const user = setting.userId
+      ? await this.usersRepository.findOneBy({ id: setting.userId })
+      : null;
+
+    return {
+      id: EMAIL_ACCOUNT_ID,
+      email: setting.email.toLowerCase(),
+      refreshToken: setting.refreshToken,
+      displayName: setting.displayName,
+      userId: setting.userId,
+      user: user ?? undefined,
+      lastPulledAt: setting.lastPulledAt
+        ? new Date(setting.lastPulledAt)
+        : undefined,
+    };
+  }
+
   async login(dto: RegisterGmailAccountDto) {
     const oauthClient = this.createOAuthClient();
     const { tokens } = await oauthClient.getToken(dto.code);
@@ -90,21 +122,34 @@ export class EmailService {
       where: { email: profile.emailAddress },
     });
 
-    if (
-      !user ||
-      ![Role.Admin].includes(user.role as Role)
-    ) {
+    if (!user || ![Role.Admin].includes(user.role as Role)) {
       throw new ForbiddenException(
         'This email does not have permission to use the Gmail module.',
       );
     }
 
-    let account = await this.gmailAccountRepo.findOne({
-      where: { userId: user.id },
-    });
+    const existingSetting =
+      (await this.settingService.get<{
+        email?: string;
+        refreshToken?: string;
+        displayName?: string;
+        userId?: number;
+        lastPulledAt?: string;
+      }>(EMAIL_ACCOUNT_SETTING_KEY)) ?? {};
+
+    const normalizedEmail = profile.emailAddress.toLowerCase();
+
+    if (
+      existingSetting.email &&
+      existingSetting.email.toLowerCase() !== normalizedEmail
+    ) {
+      throw new ForbiddenException(
+        'Configured Gmail account does not match the signed-in email.',
+      );
+    }
 
     if (!refreshToken) {
-      refreshToken = account?.refreshToken;
+      refreshToken = existingSetting.refreshToken;
     }
 
     if (!refreshToken) {
@@ -113,21 +158,20 @@ export class EmailService {
       );
     }
 
-    if (account) {
-      account.refreshToken = refreshToken;
-      account.email = profile.emailAddress;
-      account.displayName = profile.emailAddress;
-    } else {
-      account = this.gmailAccountRepo.create({
-        email: profile.emailAddress,
-        refreshToken,
-        displayName: profile.emailAddress,
-        user,
-        userId: user.id,
-      });
-    }
+    await this.settingService.updateOrCreate(EMAIL_ACCOUNT_SETTING_KEY, {
+      email: normalizedEmail,
+      refreshToken,
+      displayName: profile.emailAddress,
+      userId: user.id,
+      lastPulledAt: existingSetting.lastPulledAt,
+    });
 
-    await this.gmailAccountRepo.save(account);
+    const account = await this.loadAccountFromSetting();
+    if (!account) {
+      throw new ServiceUnavailableException(
+        'Email account setting is missing after login.',
+      );
+    }
 
     const sessionToken = await this.issueSessionToken(account);
 
@@ -146,23 +190,22 @@ export class EmailService {
     };
   }
 
-  async issueSessionForAccount(account: GmailAccount) {
+  async issueSessionForAccount(account: EmailAccountContext) {
     const token = await this.issueSessionToken(account);
-    const user = account.user ?? (await this.usersRepository.findOneBy({ id: account.userId }));
+    const user =
+      account.user ?? (await this.usersRepository.findOneBy({ id: account.userId }));
     return {
       token,
       expiresIn: this.sessionTtl,
       account: {
         id: account.id,
         email: account.email,
-        user: user
-          ? { id: user.id, role: user.role, email: user.email }
-          : undefined,
+        user: user ? { id: user.id, role: user.role, email: user.email } : undefined,
       },
     };
   }
 
-  private async issueSessionToken(account: GmailAccount) {
+  private async issueSessionToken(account: EmailAccountContext) {
     return this.jwtService.signAsync(
       {
         accountId: account.id,
@@ -179,19 +222,26 @@ export class EmailService {
   async validateSession(token: string) {
     const payload = await this.jwtService.verifyAsync<{
       accountId: string;
+      userId?: number;
+      email?: string;
     }>(token, {
       secret: this.sessionSecret,
     });
-    const account = await this.gmailAccountRepo.findOne({
-      where: { id: payload.accountId },
-    });
-    if (!account) {
+    const account = await this.loadAccountFromSetting();
+    if (!account || payload.email?.toLowerCase() !== account.email.toLowerCase()) {
       throw new NotFoundException('Email account not found.');
+    }
+
+    if (!account.user && payload.userId) {
+      const user = await this.usersRepository.findOneBy({ id: payload.userId });
+      if (user) {
+        account.user = user;
+      }
     }
     return account;
   }
 
-  async getLabels(account: GmailAccount) {
+  async getLabels(account: EmailAccountContext) {
     const client = await this.getClient(account);
     const { data } = await client.users.labels.list({ userId: 'me' });
     const labels = data.labels ?? [];
@@ -199,10 +249,10 @@ export class EmailService {
     return labels;
   }
 
-  async getLabelsForEmail(account: GmailAccount, messageId: string) {
+  async getLabelsForEmail(account: EmailAccountContext, messageId: string) {
     const email = await this.gmailEmailRepo.findOne({
       where: {
-        gmailAccount: { id: account.id },
+        accountId: account.id,
         gmailMessageId: messageId,
       },
       relations: ['labels'],
@@ -215,7 +265,7 @@ export class EmailService {
     return email.labels ?? [];
   }
 
-  async createLabel(account: GmailAccount, dto: CreateGmailLabelDto) {
+  async createLabel(account: EmailAccountContext, dto: CreateGmailLabelDto) {
     const client = await this.getClient(account);
     const { data } = await client.users.labels.create({
       userId: 'me',
@@ -231,7 +281,7 @@ export class EmailService {
     return data;
   }
 
-  async addLabelToMail(account: GmailAccount, dto: AddGmailLabelDto) {
+  async addLabelToMail(account: EmailAccountContext, dto: AddGmailLabelDto) {
     const client = await this.getClient(account);
     const { data } = await client.users.messages.modify({
       userId: 'me',
@@ -244,7 +294,7 @@ export class EmailService {
     const label = await this.ensureLabel(account, dto.labelId);
     if (label) {
       const email = await this.gmailEmailRepo.findOne({
-        where: { gmailMessageId: dto.messageId },
+        where: { gmailMessageId: dto.messageId, accountId: account.id },
         relations: ['labels'],
       });
       if (email) {
@@ -261,35 +311,37 @@ export class EmailService {
     return data;
   }
 
-  async readAllMails(account: GmailAccount) {
+  async readAllMails(account: EmailAccountContext) {
     return this.pullEmailsFromGmail(account);
   }
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async autoPullEmails() {
-    const accounts = await this.gmailAccountRepo.find();
-    for (const account of accounts) {
-      try {
-        await this.pullEmailsFromGmail(account);
-      } catch (error) {
-        const reason = error instanceof Error ? error.stack ?? error.message : String(error);
-        this.logger.error(
-          `Failed to pull Gmail messages for account ${account.id}`,
-          reason,
-        );
-      }
+    const account = await this.loadAccountFromSetting();
+    if (!account) {
+      return;
+    }
+    try {
+      await this.pullEmailsFromGmail(account);
+    } catch (error) {
+      const reason =
+        error instanceof Error ? error.stack ?? error.message : String(error);
+      this.logger.error(
+        `Failed to pull Gmail messages for account ${account.id}`,
+        reason,
+      );
     }
   }
 
-  async getStoredEmails(account: GmailAccount, query: BaseQueryDto) {
+  async getStoredEmails(account: EmailAccountContext, query: BaseQueryDto) {
     const qb = this.gmailEmailRepo
       .createQueryBuilder('email')
       .leftJoinAndSelect('email.labels', 'label')
-      .where('email.gmailAccountId = :accountId', { accountId: account.id });
+      .where('email.accountId = :accountId', { accountId: account.id });
 
-    const page = Math.max(query.page || 1);
-    const limit = Math.min(Math.max(1, query.limit), 20);
-    const skip = (page - 1) * Math.min(limit, 20);
+    const page = Math.max(1, query.page ?? 1);
+    const limit = Math.min(Math.max(1, query.limit ?? 10), 20);
+    const skip = (page - 1) * limit;
 
     const keyword = query.keyword;
     if (keyword) {
@@ -316,7 +368,7 @@ export class EmailService {
     ]);
     const orderColumn = orderableColumns.has(query.order_col ?? '')
       ? (query.order_col as string)
-      : 'id';
+      : 'internalDate';
     const orderDirection = query.order_dir === 'DESC' ? 'DESC' : 'ASC';
 
     qb.orderBy(`email.${orderColumn}`, orderDirection)
@@ -336,15 +388,15 @@ export class EmailService {
     };
   }
 
-  async getAllStoredEmails(account: GmailAccount) {
+  async getAllStoredEmails(account: EmailAccountContext) {
     return this.gmailEmailRepo.find({
-      where: { gmailAccount: { id: account.id } },
+      where: { accountId: account.id },
       relations: ['labels'],
       order: { internalDate: 'DESC', createdAt: 'DESC' },
     });
   }
 
-  async replyMail(account: GmailAccount, dto: ReplyMailDto) {
+  async replyMail(account: EmailAccountContext, dto: ReplyMailDto) {
     const client = await this.getClient(account);
 
     const encodedSubject = Buffer.from(dto.subject ?? "", "utf-8").toString("base64");
@@ -394,19 +446,19 @@ export class EmailService {
     return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
   }
 
-  private async getClient(account: GmailAccount) {
+  private async getClient(account: EmailAccountContext) {
     const oauthClient = this.createOAuthClient();
     oauthClient.setCredentials({ refresh_token: account.refreshToken });
     return google.gmail({ version: 'v1', auth: oauthClient });
   }
 
-  private async ensureLabel(account: GmailAccount, labelId: string) {
+  private async ensureLabel(account: EmailAccountContext, labelId: string) {
     if (!labelId) {
       return null;
     }
     let label = await this.gmailLabelRepo.findOne({
       where: {
-        gmailAccount: { id: account.id },
+        accountId: account.id,
         gmailLabelId: labelId,
       },
     });
@@ -423,11 +475,11 @@ export class EmailService {
   }
 
   private async upsertLabels(
-    account: GmailAccount,
+    account: EmailAccountContext,
     labels: gmail_v1.Schema$Label[] = [],
   ) {
     const existing = await this.gmailLabelRepo.find({
-      where: { gmailAccount: { id: account.id } },
+      where: { accountId: account.id },
     });
     const existingMap = new Map(
       existing.map((label) => [label.gmailLabelId, label]),
@@ -439,7 +491,7 @@ export class EmailService {
       const entity =
         existingMap.get(label.id) ??
         this.gmailLabelRepo.create({
-          gmailAccount: account,
+          accountId: account.id,
           gmailLabelId: label.id,
         });
       entity.name = label.name ?? entity.name ?? label.id;
@@ -457,7 +509,7 @@ export class EmailService {
   }
 
   private async persistEmails(
-    account: GmailAccount,
+    account: EmailAccountContext,
     messages: Array<{
       id?: string | null;
       threadId?: string | null;
@@ -484,7 +536,7 @@ export class EmailService {
     }
 
     const existing = await this.gmailEmailRepo.find({
-      where: { gmailMessageId: In(ids) },
+      where: { gmailMessageId: In(ids), accountId: account.id },
       relations: ['labels'],
     });
     const existingMap = new Map(
@@ -498,7 +550,7 @@ export class EmailService {
       const entity =
         existingMap.get(message.id) ??
         this.gmailEmailRepo.create({
-          gmailAccount: account,
+          accountId: account.id,
           gmailMessageId: message.id,
         });
 
@@ -596,7 +648,7 @@ export class EmailService {
   }
 
   private async pullEmailsFromGmail(
-    account: GmailAccount,
+    account: EmailAccountContext,
     triggeredAt = new Date(),
   ) {
     const client = await this.getClient(account);
@@ -639,7 +691,7 @@ export class EmailService {
     const alreadyFetched = await this.gmailEmailRepo.find({
       select: ['gmailMessageId'],
       where: {
-        gmailAccount: { id: account.id },
+        accountId: account.id,
         gmailMessageId: In(newMessageIds),
       },
     });
@@ -724,13 +776,24 @@ export class EmailService {
   }
 
   private async updateLastPulledAt(
-    account: GmailAccount,
+    account: EmailAccountContext,
     pulledAt: Date,
   ): Promise<void> {
     account.lastPulledAt = pulledAt;
-    await this.gmailAccountRepo.update(
-      { id: account.id },
-      { lastPulledAt: pulledAt },
-    );
+    const existing =
+      (await this.settingService.get<{
+        email?: string;
+        refreshToken?: string;
+        displayName?: string;
+        userId?: number;
+        lastPulledAt?: string;
+      }>(EMAIL_ACCOUNT_SETTING_KEY)) ?? {};
+
+    await this.settingService.updateOrCreate(EMAIL_ACCOUNT_SETTING_KEY, {
+      ...existing,
+      lastPulledAt: pulledAt.toISOString(),
+    });
   }
 }
+
+
