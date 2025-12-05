@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
   ServiceUnavailableException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
@@ -23,13 +24,17 @@ import { Role } from '@shared/authorization/enums/role.enum';
 import { BaseQueryDto } from '@shared/base-resource/dtos/base-query.dto';
 import { SettingService } from '@shared/setting/services/setting.service';
 import { EmailAccountContext } from '../types/email-account.type';
+import { RabbitMQService } from '@shared/services/rabbitmq.service';
 
 const GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.modify'];
 const EMAIL_ACCOUNT_SETTING_KEY = 'emailAccount';
 const EMAIL_ACCOUNT_ID = 'default-email-account';
+const RK_EMAIL_INGEST = 'email.ingest';
+const RK_EMAIL_PROCESSED = 'email.processed';
+const QUEUE_EMAIL_PROCESSED = 'email_processed_queue';
 
 @Injectable()
-export class EmailService {
+export class EmailService implements OnModuleInit {
   private readonly logger = new Logger(EmailService.name);
   private readonly sessionSecret: string;
   private readonly sessionTtl: string;
@@ -43,6 +48,7 @@ export class EmailService {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
     private readonly settingService: SettingService,
+    private readonly rabbit: RabbitMQService,
     private readonly jwtService: JwtService,
   ) {
     this.sessionSecret =
@@ -54,6 +60,28 @@ export class EmailService {
     }
     this.sessionTtl =
       this.configService.get<string>('GMAIL_SESSION_TTL') ?? '2h';
+  }
+
+  async onModuleInit() {
+    await this.rabbit.subscribe(
+      QUEUE_EMAIL_PROCESSED,
+      RK_EMAIL_PROCESSED,
+      async (data: {
+        gmailMessageId: string;
+        threadId?: string;
+        labelIds?: string[];
+      }) => {
+        try {
+          await this.handleProcessedEmailMessage(data);
+        } catch (err) {
+          this.logger.error(
+            `Failed to handle processed email ${data?.gmailMessageId ?? ''}: ${
+              (err as Error)?.message ?? err
+            }`,
+          );
+        }
+      },
+    );
   }
 
   generateOAuthUrl(options?: { state?: string; forceConsent?: boolean }) {
@@ -193,14 +221,17 @@ export class EmailService {
   async issueSessionForAccount(account: EmailAccountContext) {
     const token = await this.issueSessionToken(account);
     const user =
-      account.user ?? (await this.usersRepository.findOneBy({ id: account.userId }));
+      account.user ??
+      (await this.usersRepository.findOneBy({ id: account.userId }));
     return {
       token,
       expiresIn: this.sessionTtl,
       account: {
         id: account.id,
         email: account.email,
-        user: user ? { id: user.id, role: user.role, email: user.email } : undefined,
+        user: user
+          ? { id: user.id, role: user.role, email: user.email }
+          : undefined,
       },
     };
   }
@@ -228,7 +259,10 @@ export class EmailService {
       secret: this.sessionSecret,
     });
     const account = await this.loadAccountFromSetting();
-    if (!account || payload.email?.toLowerCase() !== account.email.toLowerCase()) {
+    if (
+      !account ||
+      payload.email?.toLowerCase() !== account.email.toLowerCase()
+    ) {
       throw new NotFoundException('Email account not found.');
     }
 
@@ -371,9 +405,7 @@ export class EmailService {
       : 'internalDate';
     const orderDirection = query.order_dir === 'DESC' ? 'DESC' : 'ASC';
 
-    qb.orderBy(`email.${orderColumn}`, orderDirection)
-      .skip(skip)
-      .take(limit);
+    qb.orderBy(`email.${orderColumn}`, orderDirection).skip(skip).take(limit);
 
     const [items, total] = await qb.getManyAndCount();
 
@@ -399,7 +431,9 @@ export class EmailService {
   async replyMail(account: EmailAccountContext, dto: ReplyMailDto) {
     const client = await this.getClient(account);
 
-    const encodedSubject = Buffer.from(dto.subject ?? "", "utf-8").toString("base64");
+    const encodedSubject = Buffer.from(dto.subject ?? '', 'utf-8').toString(
+      'base64',
+    );
 
     const rawLines = [
       `To: ${dto.to}`,
@@ -409,19 +443,19 @@ export class EmailService {
       `MIME-Version: 1.0`,
       `Content-Type: text/plain; charset="UTF-8"`,
       `Content-Transfer-Encoding: base64`,
-      "",
-      Buffer.from(dto.body ?? "", "utf-8").toString("base64"),
+      '',
+      Buffer.from(dto.body ?? '', 'utf-8').toString('base64'),
     ];
 
-    const rawMessage = rawLines.join("\r\n");
+    const rawMessage = rawLines.join('\r\n');
 
     const encodedMessage = Buffer.from(rawMessage)
-      .toString("base64")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
 
     const { data } = await client.users.messages.send({
-      userId: "me",
+      userId: 'me',
       requestBody: {
         raw: encodedMessage,
         threadId: dto.threadId,
@@ -430,7 +464,6 @@ export class EmailService {
 
     return data;
   }
-
 
   private createOAuthClient() {
     const clientId = this.configService.get<string>('GMAIL_CLIENT_ID');
@@ -456,7 +489,7 @@ export class EmailService {
     if (!labelId) {
       return null;
     }
-    let label = await this.gmailLabelRepo.findOne({
+    const label = await this.gmailLabelRepo.findOne({
       where: {
         accountId: account.id,
         gmailLabelId: labelId,
@@ -487,7 +520,9 @@ export class EmailService {
     const toSave: GmailLabel[] = [];
 
     for (const label of labels) {
-      if (!label?.id) continue;
+      if (!label?.id) {
+        continue;
+      }
       const entity =
         existingMap.get(label.id) ??
         this.gmailLabelRepo.create({
@@ -546,7 +581,9 @@ export class EmailService {
     const toSave: GmailEmail[] = [];
 
     for (const message of messages) {
-      if (!message.id) continue;
+      if (!message.id) {
+        continue;
+      }
       const entity =
         existingMap.get(message.id) ??
         this.gmailEmailRepo.create({
@@ -593,9 +630,7 @@ export class EmailService {
     }, {});
   }
 
-  private parseEmailAddress(
-    raw?: string,
-  ): { name?: string; email?: string } {
+  private parseEmailAddress(raw?: string): { name?: string; email?: string } {
     if (!raw) {
       return {};
     }
@@ -642,7 +677,9 @@ export class EmailService {
   }
 
   private decodeBody(data?: string) {
-    if (!data) return undefined;
+    if (!data) {
+      return undefined;
+    }
     const normalized = data.replace(/-/g, '+').replace(/_/g, '/');
     return Buffer.from(normalized, 'base64').toString('utf-8');
   }
@@ -765,6 +802,7 @@ export class EmailService {
     );
 
     await this.persistEmails(account, cleanDetails, labelMap);
+    await this.publishNewEmails(account, cleanDetails);
     await this.updateLastPulledAt(account, triggeredAt);
 
     return cleanDetails;
@@ -794,6 +832,65 @@ export class EmailService {
       lastPulledAt: pulledAt.toISOString(),
     });
   }
+
+  private async publishNewEmails(
+    account: EmailAccountContext,
+    emails: Array<{
+      id?: string | null;
+      threadId?: string | null;
+      snippet?: string | null;
+      headers: Record<string, string>;
+      payload?: gmail_v1.Schema$MessagePart | null;
+      labelIds?: string[] | null;
+      internalDate?: string | null;
+      senderName?: string;
+      senderEmail?: string;
+      receiverName?: string;
+      receiverEmail?: string;
+      content?: string;
+      parentEmailId?: string;
+      messageIdHeader?: string;
+    }>,
+  ) {
+    if (!emails.length) {
+      return;
+    }
+
+    const basePayload = (email: (typeof emails)[number]) => ({
+      gmailMessageId: email.id,
+      threadId: email.threadId,
+      subject: email.headers?.['Subject'],
+      senderName: email.senderName,
+      senderEmail: email.senderEmail,
+      content: email.content ?? email.snippet,
+      messageIdHeader: email.messageIdHeader,
+    });
+
+    for (const email of emails) {
+      if (!email.id) {
+        continue;
+      }
+      await this.rabbit.publish(RK_EMAIL_INGEST, basePayload(email));
+    }
+  }
+
+  private async handleProcessedEmailMessage(data: {
+    gmailMessageId: string;
+    labelIds?: string[];
+  }) {
+    const account = await this.loadAccountFromSetting();
+    if (!account) {
+      this.logger.warn('Skipped processed email: account missing');
+      return;
+    }
+
+    if (Array.isArray(data.labelIds)) {
+      for (const labelId of data.labelIds) {
+        await this.addLabelToMail(account, {
+          messageId: data.gmailMessageId,
+          labelId,
+        });
+      }
+    }
+  }
 }
-
-
