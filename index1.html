@@ -109,6 +109,28 @@
       </div>
     </div>
 
+    <div class="card bg-base-100 shadow">
+      <div class="card-body space-y-3">
+        <h3 class="font-semibold">Label mapping (setting, 6 keys)</h3>
+        <div class="flex gap-2 flex-wrap">
+          <button id="btn-load-mapping" class="btn btn-outline">Load mapping + labels</button>
+          <button id="btn-save-mapping" class="btn btn-primary btn-outline">Save mapping</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="table table-xs">
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Gmail label</th>
+              </tr>
+            </thead>
+            <tbody id="mapping-rows"></tbody>
+          </table>
+        </div>
+        <div class="text-xs text-slate-500">Chọn label Gmail có sẵn cho từng key; để trống nếu không dùng (null).</div>
+      </div>
+    </div>
+
     <div class="grid gap-4 md:grid-cols-2">
       <div class="card bg-base-100 shadow">
         <div class="card-body space-y-2">
@@ -180,6 +202,67 @@
 
     const setLog = (data) => (logOutput.textContent = JSON.stringify(data, null, 2));
 
+    // Label mapping helpers
+    const logicalLabelKeys = [
+      { key: 'class registration', label: 'Class registration' },
+      { key: 'administrative', label: 'Administrative' },
+      { key: 'department', label: 'Department' },
+      { key: 'graduation', label: 'Graduation' },
+      { key: 'academic', label: 'Academic' },
+      { key: 'other', label: 'Other' },
+    ];
+    const mappingRows = document.getElementById('mapping-rows');
+
+    const renderMappingRows = (labels = [], mapping = {}) => {
+      mappingRows.innerHTML = '';
+      const optionsHtml = ['<option value="">(null)</option>']
+        .concat(
+          (labels ?? []).map(
+            (l) =>
+              `<option value="${l.id}">${l.name ?? l.id}</option>`,
+          ),
+        )
+        .join('');
+      logicalLabelKeys.forEach(({ key, label }) => {
+        const select = document.createElement('select');
+        select.className = 'select select-bordered select-sm w-full';
+        select.innerHTML = optionsHtml;
+        select.value = mapping[key] ?? '';
+        select.dataset.mappingKey = key;
+
+        const tr = document.createElement('tr');
+        const tdKey = document.createElement('td');
+        tdKey.textContent = `${key} (${label})`;
+        const tdSelect = document.createElement('td');
+        tdSelect.appendChild(select);
+        tr.appendChild(tdKey);
+        tr.appendChild(tdSelect);
+        mappingRows.appendChild(tr);
+      });
+    };
+
+    const loadMapping = async () => {
+      const [labelsResp, mappingResp] = await Promise.all([
+        fetchJson('/email/labels'),
+        fetchJson('/email/labels/mapping'),
+      ]);
+      renderMappingRows(labelsResp ?? [], mappingResp ?? {});
+      setLog({ labels: labelsResp, mapping: mappingResp });
+    };
+
+    const saveMapping = async () => {
+      const selects = mappingRows.querySelectorAll('select[data-mapping-key]');
+      const payload = {};
+      selects.forEach((sel) => {
+        payload[sel.dataset.mappingKey] = sel.value || null;
+      });
+      const res = await fetchJson('/email/labels/mapping', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      setLog({ saved: res });
+    };
+
     const fetchJson = async (path, { method = 'GET', body, auth = 'gmail' } = {}) => {
       const apiBase = apiBaseInput.value.trim();
       if (!apiBase) throw new Error('Missing API base URL');
@@ -198,6 +281,13 @@
       if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
       return text ? JSON.parse(text) : null;
     };
+
+    document.getElementById('btn-load-mapping').addEventListener('click', () =>
+      loadMapping().catch((err) => setLog({ error: err.message })),
+    );
+    document.getElementById('btn-save-mapping').addEventListener('click', () =>
+      saveMapping().catch((err) => setLog({ error: err.message })),
+    );
 
     const persistSession = (token, meta) => {
       gmailToken = token;
@@ -450,3 +540,5 @@
   </script>
 </body>
 </html>
+
+

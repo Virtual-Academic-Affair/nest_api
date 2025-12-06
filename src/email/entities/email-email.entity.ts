@@ -2,13 +2,10 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinTable,
-  ManyToMany,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
-import { GmailLabel } from './email-label.entity';
 
 @Entity()
 @Unique(['accountId', 'gmailMessageId'])
@@ -55,15 +52,9 @@ export class GmailEmail {
   @Column({ type: 'timestamptz', nullable: true })
   fetchedAt?: Date;
 
-  @ManyToMany(() => GmailLabel, (label) => label.emails, {
-    cascade: false,
-  })
-  @JoinTable({
-    name: 'gmail_email_labels',
-    joinColumn: { name: 'email_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'label_id', referencedColumnName: 'id' },
-  })
-  labels: GmailLabel[];
+  // Store Gmail label IDs directly
+  @Column('text', { array: true, default: '{}' })
+  labelIds: string[];
 
   @CreateDateColumn()
   createdAt: Date;

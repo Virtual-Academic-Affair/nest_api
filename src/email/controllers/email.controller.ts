@@ -16,7 +16,6 @@ import { EmailSessionGuard } from '../guards/email-session.guard';
 import { GmailAccountCtx } from '../decorators/gmail-account.decorator';
 import { EmailAccountContext } from '../types/email-account.type';
 import { RegisterGmailAccountDto } from '../dto/register-gmail-account.dto';
-import { CreateGmailLabelDto } from '../dto/create-gmail-label.dto';
 import { AddGmailLabelDto } from '../dto/add-gmail-label.dto';
 import { ReplyMailDto } from '../dto/reply-mail.dto';
 import { BaseQueryDto } from '@shared/base-resource/dtos/base-query.dto';
@@ -33,9 +32,7 @@ export class EmailController {
     @Query('forceConsent') forceConsent?: string,
   ) {
     const force =
-      forceConsent === 'true' ||
-      forceConsent === '1' ||
-      forceConsent === 'yes';
+      forceConsent === 'true' || forceConsent === '1' || forceConsent === 'yes';
     return {
       url: this.emailService.generateOAuthUrl({ state, forceConsent: force }),
     };
@@ -50,6 +47,18 @@ export class EmailController {
   @Post('login')
   login(@Body() dto: RegisterGmailAccountDto) {
     return this.emailService.login(dto);
+  }
+
+  @UseGuards(EmailSessionGuard)
+  @Get('labels/mapping')
+  getLabelMapping() {
+    return this.emailService.getLabelMappingSetting();
+  }
+
+  @UseGuards(EmailSessionGuard)
+  @Post('labels/mapping')
+  updateLabelMapping(@Body() mapping: Record<string, string | null>) {
+    return this.emailService.updateLabelMappingSetting(mapping as any);
   }
 
   @UseGuards(EmailSessionGuard)
@@ -68,15 +77,6 @@ export class EmailController {
   }
 
   @UseGuards(EmailSessionGuard)
-  @Post('labels')
-  createLabel(
-    @GmailAccountCtx() account: EmailAccountContext,
-    @Body() dto: CreateGmailLabelDto,
-  ) {
-    return this.emailService.createLabel(account, dto);
-  }
-
-  @UseGuards(EmailSessionGuard)
   @Post('labels/assign')
   addLabel(
     @GmailAccountCtx() account: EmailAccountContext,
@@ -89,9 +89,7 @@ export class EmailController {
   @Get('messages')
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'page', required: false, type: Number })
-  readMessages(
-    @GmailAccountCtx() account: EmailAccountContext,
-  ) {
+  readMessages(@GmailAccountCtx() account: EmailAccountContext) {
     return this.emailService.readAllMails(account);
   }
 

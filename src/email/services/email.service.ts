@@ -14,10 +14,8 @@ import { GenerateAuthUrlOpts } from 'google-auth-library';
 import { google, gmail_v1 } from 'googleapis';
 import { Brackets, In, Repository } from 'typeorm';
 import { AddGmailLabelDto } from '../dto/add-gmail-label.dto';
-import { CreateGmailLabelDto } from '../dto/create-gmail-label.dto';
 import { RegisterGmailAccountDto } from '../dto/register-gmail-account.dto';
 import { ReplyMailDto } from '../dto/reply-mail.dto';
-import { GmailLabel } from '../entities/email-label.entity';
 import { GmailEmail } from '../entities/email-email.entity';
 import { User } from '@authentication/entities/user.entity';
 import { Role } from '@shared/authorization/enums/role.enum';
@@ -32,6 +30,17 @@ const EMAIL_ACCOUNT_ID = 'default-email-account';
 const RK_EMAIL_INGEST = 'email.ingest';
 const RK_EMAIL_PROCESSED = 'email.processed';
 const QUEUE_EMAIL_PROCESSED = 'email_processed_queue';
+const LABEL_MAPPING_SETTING_KEY = 'emailLabelMapping';
+const LOGICAL_LABEL_KEYS = [
+  'class registration',
+  'administrative',
+  'department',
+  'graduation',
+  'academic',
+  'other',
+] as const;
+type LogicalLabelKey = (typeof LOGICAL_LABEL_KEYS)[number];
+type LabelMapping = Partial<Record<LogicalLabelKey, string | null>>;
 
 @Injectable()
 export class EmailService implements OnModuleInit {
@@ -41,8 +50,6 @@ export class EmailService implements OnModuleInit {
 
   constructor(
     private readonly configService: ConfigService,
-    @InjectRepository(GmailLabel)
-    private readonly gmailLabelRepo: Repository<GmailLabel>,
     @InjectRepository(GmailEmail)
     private readonly gmailEmailRepo: Repository<GmailEmail>,
     @InjectRepository(User)
@@ -66,11 +73,7 @@ export class EmailService implements OnModuleInit {
     await this.rabbit.subscribe(
       QUEUE_EMAIL_PROCESSED,
       RK_EMAIL_PROCESSED,
-      async (data: {
-        gmailMessageId: string;
-        threadId?: string;
-        labelIds?: string[];
-      }) => {
+      async (data: { gmailMessageId: string; names?: string[] }) => {
         try {
           await this.handleProcessedEmailMessage(data);
         } catch (err) {
@@ -142,7 +145,7 @@ export class EmailService implements OnModuleInit {
 
     if (!profile.emailAddress) {
       throw new ServiceUnavailableException(
-        'Unable to retrieve email from Email profile.',
+        'Unable to retrieve email from Gmail profile.',
       );
     }
 
@@ -278,9 +281,7 @@ export class EmailService implements OnModuleInit {
   async getLabels(account: EmailAccountContext) {
     const client = await this.getClient(account);
     const { data } = await client.users.labels.list({ userId: 'me' });
-    const labels = data.labels ?? [];
-    await this.upsertLabels(account, labels);
-    return labels;
+    return data.labels ?? [];
   }
 
   async getLabelsForEmail(account: EmailAccountContext, messageId: string) {
@@ -289,30 +290,13 @@ export class EmailService implements OnModuleInit {
         accountId: account.id,
         gmailMessageId: messageId,
       },
-      relations: ['labels'],
     });
 
     if (!email) {
       throw new NotFoundException('Email not found with this messageId.');
     }
 
-    return email.labels ?? [];
-  }
-
-  async createLabel(account: EmailAccountContext, dto: CreateGmailLabelDto) {
-    const client = await this.getClient(account);
-    const { data } = await client.users.labels.create({
-      userId: 'me',
-      requestBody: {
-        name: dto.name,
-        labelListVisibility: 'labelShow',
-        messageListVisibility: 'show',
-      },
-    });
-    if (data) {
-      await this.upsertLabels(account, [data]);
-    }
-    return data;
+    return email.labelIds ?? [];
   }
 
   async addLabelToMail(account: EmailAccountContext, dto: AddGmailLabelDto) {
@@ -325,21 +309,14 @@ export class EmailService implements OnModuleInit {
       },
     });
 
-    const label = await this.ensureLabel(account, dto.labelId);
-    if (label) {
-      const email = await this.gmailEmailRepo.findOne({
-        where: { gmailMessageId: dto.messageId, accountId: account.id },
-        relations: ['labels'],
-      });
-      if (email) {
-        const labelExists = email.labels?.some(
-          (existing) => existing.id === label.id,
-        );
-        if (!labelExists) {
-          email.labels = [...(email.labels ?? []), label];
-          await this.gmailEmailRepo.save(email);
-        }
-      }
+    const email = await this.gmailEmailRepo.findOne({
+      where: { gmailMessageId: dto.messageId, accountId: account.id },
+    });
+    if (email) {
+      const current = new Set(email.labelIds ?? []);
+      current.add(dto.labelId);
+      email.labelIds = Array.from(current);
+      await this.gmailEmailRepo.save(email);
     }
 
     return data;
@@ -370,7 +347,6 @@ export class EmailService implements OnModuleInit {
   async getStoredEmails(account: EmailAccountContext, query: BaseQueryDto) {
     const qb = this.gmailEmailRepo
       .createQueryBuilder('email')
-      .leftJoinAndSelect('email.labels', 'label')
       .where('email.accountId = :accountId', { accountId: account.id });
 
     const page = Math.max(1, query.page ?? 1);
@@ -423,7 +399,6 @@ export class EmailService implements OnModuleInit {
   async getAllStoredEmails(account: EmailAccountContext) {
     return this.gmailEmailRepo.find({
       where: { accountId: account.id },
-      relations: ['labels'],
       order: { internalDate: 'DESC', createdAt: 'DESC' },
     });
   }
@@ -485,64 +460,6 @@ export class EmailService implements OnModuleInit {
     return google.gmail({ version: 'v1', auth: oauthClient });
   }
 
-  private async ensureLabel(account: EmailAccountContext, labelId: string) {
-    if (!labelId) {
-      return null;
-    }
-    const label = await this.gmailLabelRepo.findOne({
-      where: {
-        accountId: account.id,
-        gmailLabelId: labelId,
-      },
-    });
-    if (label) {
-      return label;
-    }
-    const client = await this.getClient(account);
-    const { data } = await client.users.labels.get({
-      userId: 'me',
-      id: labelId,
-    });
-    const map = await this.upsertLabels(account, data ? [data] : []);
-    return map.get(labelId) ?? null;
-  }
-
-  private async upsertLabels(
-    account: EmailAccountContext,
-    labels: gmail_v1.Schema$Label[] = [],
-  ) {
-    const existing = await this.gmailLabelRepo.find({
-      where: { accountId: account.id },
-    });
-    const existingMap = new Map(
-      existing.map((label) => [label.gmailLabelId, label]),
-    );
-    const toSave: GmailLabel[] = [];
-
-    for (const label of labels) {
-      if (!label?.id) {
-        continue;
-      }
-      const entity =
-        existingMap.get(label.id) ??
-        this.gmailLabelRepo.create({
-          accountId: account.id,
-          gmailLabelId: label.id,
-        });
-      entity.name = label.name ?? entity.name ?? label.id;
-      entity.type = label.type ?? entity.type;
-      entity.color = label.color?.backgroundColor ?? entity.color;
-      existingMap.set(label.id, entity);
-      toSave.push(entity);
-    }
-
-    if (toSave.length) {
-      await this.gmailLabelRepo.save(toSave);
-    }
-
-    return existingMap;
-  }
-
   private async persistEmails(
     account: EmailAccountContext,
     messages: Array<{
@@ -561,7 +478,6 @@ export class EmailService implements OnModuleInit {
       parentEmailId?: string;
       messageIdHeader?: string;
     }>,
-    labelMap: Map<string, GmailLabel>,
   ) {
     const ids = messages
       .map((message) => message.id)
@@ -572,7 +488,6 @@ export class EmailService implements OnModuleInit {
 
     const existing = await this.gmailEmailRepo.find({
       where: { gmailMessageId: In(ids), accountId: account.id },
-      relations: ['labels'],
     });
     const existingMap = new Map(
       existing.map((email) => [email.gmailMessageId, email]),
@@ -606,10 +521,8 @@ export class EmailService implements OnModuleInit {
         ? new Date(Number(message.internalDate))
         : entity.internalDate ?? new Date();
       entity.fetchedAt = new Date();
-      entity.labels =
-        message.labelIds
-          ?.map((labelId) => labelMap.get(labelId))
-          .filter((label): label is GmailLabel => !!label) ?? [];
+      const labelsSet = new Set<string>(entity.labelIds ?? []);
+      entity.labelIds = Array.from(labelsSet);
 
       toSave.push(entity);
     }
@@ -746,11 +659,6 @@ export class EmailService implements OnModuleInit {
       return [];
     }
 
-    const { data: labelsData } = await client.users.labels.list({
-      userId: 'me',
-    });
-    const labelMap = await this.upsertLabels(account, labelsData.labels ?? []);
-
     const details = await Promise.all(
       filteredMessages.map(async (message) => {
         const { data: messageData } = await client.users.messages.get({
@@ -801,7 +709,7 @@ export class EmailService implements OnModuleInit {
       (detail): detail is NonNullable<typeof detail> => !!detail,
     );
 
-    await this.persistEmails(account, cleanDetails, labelMap);
+    await this.persistEmails(account, cleanDetails);
     await this.publishNewEmails(account, cleanDetails);
     await this.updateLastPulledAt(account, triggeredAt);
 
@@ -831,6 +739,35 @@ export class EmailService implements OnModuleInit {
       ...existing,
       lastPulledAt: pulledAt.toISOString(),
     });
+  }
+
+  private async getLabelMapping(): Promise<LabelMapping> {
+    const mapping =
+      (await this.settingService.get<LabelMapping>(
+        LABEL_MAPPING_SETTING_KEY,
+      )) ?? {};
+    const normalized: LabelMapping = {};
+    for (const key of LOGICAL_LABEL_KEYS) {
+      normalized[key] = mapping[key] ?? null;
+    }
+    return normalized;
+  }
+
+  async getLabelMappingSetting() {
+    return this.getLabelMapping();
+  }
+
+  async updateLabelMappingSetting(mapping: LabelMapping) {
+    const normalized: LabelMapping = {};
+    for (const key of LOGICAL_LABEL_KEYS) {
+      normalized[key] = mapping[key] ?? null;
+    }
+    await this.settingService.updateOrCreate(
+      LABEL_MAPPING_SETTING_KEY,
+      normalized,
+      false,
+    );
+    return normalized;
   }
 
   private async publishNewEmails(
@@ -876,7 +813,7 @@ export class EmailService implements OnModuleInit {
 
   private async handleProcessedEmailMessage(data: {
     gmailMessageId: string;
-    labelIds?: string[];
+    names?: string[];
   }) {
     const account = await this.loadAccountFromSetting();
     if (!account) {
@@ -884,8 +821,27 @@ export class EmailService implements OnModuleInit {
       return;
     }
 
-    if (Array.isArray(data.labelIds)) {
-      for (const labelId of data.labelIds) {
+    const mapping = await this.getLabelMapping();
+
+    const normalizeKey = (name?: string): LogicalLabelKey | null => {
+      if (!name) {
+        return null;
+      }
+      const lower = name.toLowerCase().trim();
+      const match = LOGICAL_LABEL_KEYS.find((k) => k === lower);
+      return match ?? null;
+    };
+
+    if (Array.isArray(data.names)) {
+      for (const name of data.names) {
+        const key = normalizeKey(name);
+        if (!key) {
+          continue;
+        }
+        const labelId = mapping[key] ?? null;
+        if (!labelId) {
+          continue;
+        }
         await this.addLabelToMail(account, {
           messageId: data.gmailMessageId,
           labelId,
