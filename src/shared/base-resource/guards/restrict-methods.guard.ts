@@ -39,6 +39,7 @@ export class RestrictMethodsGuard implements CanActivate {
   }
 
   private checkAllow(current: string, allowed: string[]): boolean {
+    console.log(1111);
     if (!allowed.includes(current)) {
       throw new ForbiddenException();
     }

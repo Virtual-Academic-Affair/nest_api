@@ -65,7 +65,7 @@ export class GoogleService implements OnModuleInit {
     } else {
       await this.userRepository.update(user.id, userData);
     }
-
+    console.log(user);
     return this.authService.generateTokens(user);
   }
 }
