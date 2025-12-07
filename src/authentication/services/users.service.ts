@@ -31,7 +31,6 @@ export class UsersService extends ResourceService<User> {
   async assignRole(dto: AssignRoleDto) {
     const { email, role } = dto;
     let user = await this.repository.findOne({ where: { email } });
-
     if (user) {
       user.role = role;
       return await this.repository.save(user);

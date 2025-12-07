@@ -21,7 +21,7 @@ export class AuthService {
     private readonly userRepository: Repository<User>
   ) {}
 
-  private getRefreshTokenRedisKey(refreshTokenId: string | number): string {
+  private getRFTRedisKey(refreshTokenId: string | number): string {
     return `refresh_token:${refreshTokenId}`;
   }
 
@@ -44,7 +44,7 @@ export class AuthService {
     );
 
     await this.redisService.set(
-      this.getRefreshTokenRedisKey(refreshTokenId),
+      this.getRFTRedisKey(refreshTokenId),
       user.id.toString(),
       this.jwtConfiguration.refreshTokenTtl
     );
@@ -53,22 +53,20 @@ export class AuthService {
 
   async refreshTokens(dto: RefreshTokenDto) {
     const payload = await this.jwtService
-      .verifyAsync<{
-        sub: number;
-        refreshTokenId: string;
-      }>(dto.refreshToken, this.jwtConfiguration)
+      .verifyAsync<{ refreshTokenId: string }>(
+        dto.refreshToken,
+        this.jwtConfiguration
+      )
       .catch(() => {
         throw new UnauthorizedException('Invalid refresh token');
       });
-
     if (!payload.refreshTokenId) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
     const userId = await this.redisService.get(
-      this.getRefreshTokenRedisKey(payload.refreshTokenId)
+      this.getRFTRedisKey(payload.refreshTokenId)
     );
-
     if (!userId) {
       throw new UnauthorizedException('Refresh token not found or expired');
     }
@@ -76,14 +74,11 @@ export class AuthService {
     const user = await this.userRepository.findOneBy({
       id: parseInt(userId, 10),
     });
-
     if (!user || !user.isActive) {
       throw new UnauthorizedException('User not found or inactive');
     }
 
-    await this.redisService.del(
-      this.getRefreshTokenRedisKey(payload.refreshTokenId)
-    );
+    await this.redisService.del(this.getRFTRedisKey(payload.refreshTokenId));
     return this.generateTokens(user);
   }
 

@@ -49,10 +49,7 @@ export class GoogleService implements OnModuleInit {
     const isAdmin = adminEmails.includes(payload.email);
 
     // saving
-    let user = await this.userRepository.findOneBy({
-      email: payload.email,
-    });
-
+    let user = await this.userRepository.findOneBy({ email: payload.email });
     const userData = {
       googleId: payload.sub,
       name: payload.name,
@@ -66,7 +63,6 @@ export class GoogleService implements OnModuleInit {
     } else {
       await this.userRepository.update(user.id, userData);
     }
-    console.log(user);
     return this.authService.generateTokens(user);
   }
 }
