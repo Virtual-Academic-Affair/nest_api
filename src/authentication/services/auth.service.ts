@@ -18,7 +18,7 @@ export class AuthService {
     private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
     private readonly redisService: RedisService,
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>
   ) {}
 
   private getRefreshTokenRedisKey(refreshTokenId: string | number): string {
@@ -33,20 +33,20 @@ export class AuthService {
     const accessToken = await this.signToken<Partial<ActiveUserData>>(
       user.id,
       this.jwtConfiguration.accessTokenTtl,
-      { email: user.email, role: user.role },
+      { email: user.email, role: user.role }
     );
 
     const refreshTokenId = randomUUID();
     const refreshToken = await this.signToken(
       user.id,
       this.jwtConfiguration.refreshTokenTtl,
-      { refreshTokenId },
+      { refreshTokenId }
     );
 
     await this.redisService.set(
       this.getRefreshTokenRedisKey(refreshTokenId),
       user.id.toString(),
-      this.jwtConfiguration.refreshTokenTtl,
+      this.jwtConfiguration.refreshTokenTtl
     );
     return { accessToken, refreshToken };
   }
@@ -66,7 +66,7 @@ export class AuthService {
     }
 
     const userId = await this.redisService.get(
-      this.getRefreshTokenRedisKey(payload.refreshTokenId),
+      this.getRefreshTokenRedisKey(payload.refreshTokenId)
     );
 
     if (!userId) {
@@ -82,7 +82,7 @@ export class AuthService {
     }
 
     await this.redisService.del(
-      this.getRefreshTokenRedisKey(payload.refreshTokenId),
+      this.getRefreshTokenRedisKey(payload.refreshTokenId)
     );
     return this.generateTokens(user);
   }
@@ -98,7 +98,7 @@ export class AuthService {
         issuer: this.jwtConfiguration.issuer,
         secret: this.jwtConfiguration.secret,
         expiresIn,
-      },
+      }
     );
   }
 }

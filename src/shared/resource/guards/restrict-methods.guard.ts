@@ -17,7 +17,7 @@ export class RestrictMethodsGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const options = this.reflector.getAllAndOverride<RestrictMethodsOptions>(
       RESTRICT_METHODS_KEY,
-      [context.getHandler(), context.getClass()],
+      [context.getHandler(), context.getClass()]
     );
 
     if (!options) {
@@ -39,7 +39,6 @@ export class RestrictMethodsGuard implements CanActivate {
   }
 
   private checkAllow(current: string, allowed: string[]): boolean {
-    console.log(1111);
     if (!allowed.includes(current)) {
       throw new ForbiddenException();
     }

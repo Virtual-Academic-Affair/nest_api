@@ -22,7 +22,7 @@ export class AccessTokenGuard implements CanActivate {
     @Inject(jwtConfig.KEY)
     private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
     @InjectRepository(User)
-    private readonly usersRepository: Repository<User>,
+    private readonly usersRepository: Repository<User>
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -31,13 +31,13 @@ export class AccessTokenGuard implements CanActivate {
     if (!token) {
       throw new UnauthorizedException();
     }
+
     const payload = await this.jwtService.verifyAsync(
       token,
-      this.jwtConfiguration,
+      this.jwtConfiguration
     );
 
     const user = await this.usersRepository.findOneBy({ id: payload.sub });
-
     if (!user || !user.isActive) {
       throw new UnauthorizedException('User not found or inactive');
     }

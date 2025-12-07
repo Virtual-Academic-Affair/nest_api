@@ -12,7 +12,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthenticationGuard } from './authentication/guards/authentication.guard';
 import { AccessTokenGuard } from './authentication/guards/access-token.guard';
 import { RolesGuard } from '@shared/authorization/guards/roles.guard';
-import { RestrictMethodsGuard } from '@shared/base-resource/guards/restrict-methods.guard';
+import { RestrictMethodsGuard } from '@shared/resource/guards/restrict-methods.guard';
 import { Setting } from '@shared/setting/entities/setting.entity';
 import { SettingService } from './setting/services/setting.service';
 import { RedisService } from './services/redis.service';

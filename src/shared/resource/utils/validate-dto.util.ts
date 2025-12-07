@@ -4,7 +4,7 @@ import { validateOrReject } from 'class-validator';
 
 export async function validateDto<T>(
   DtoClass: new () => T,
-  data: any,
+  data: any
 ): Promise<T> {
   const dto = plainToInstance(DtoClass, data, {
     enableImplicitConversion: true,

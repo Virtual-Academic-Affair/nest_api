@@ -7,7 +7,7 @@ import { Setting } from '@shared/setting/entities/setting.entity';
 export class SettingService {
   constructor(
     @InjectRepository(Setting)
-    private readonly settingRepository: Repository<Setting>,
+    private readonly settingRepository: Repository<Setting>
   ) {}
 
   async get<T = any>(key: string): Promise<T | null> {

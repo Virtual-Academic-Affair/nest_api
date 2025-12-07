@@ -1,20 +1,20 @@
 import {
-  Get,
-  Post,
-  Delete,
   Body,
+  Delete,
+  Get,
   Param,
-  Query,
-  Put,
   ParseIntPipe,
+  Post,
+  Put,
+  Query,
 } from '@nestjs/common';
-import { BaseResourceService } from '../services/base-resource.service';
-import { BaseQueryDto } from '@shared/base-resource/dtos/base-query.dto';
+import { ResourceService } from '../services/resource.service';
+import { BaseQueryDto } from '@shared/resource/dtos/base-query.dto';
 import { ObjectLiteral } from 'typeorm';
-import { validateDto } from '@shared/base-resource/utils/validate-dto.util';
+import { validateDto } from '@shared/resource/utils/validate-dto.util';
 
-export abstract class BaseResourceController<T extends ObjectLiteral> {
-  protected constructor(protected readonly service: BaseResourceService<T>) {}
+export abstract class ResourceController<T extends ObjectLiteral> {
+  protected constructor(protected readonly service: ResourceService<T>) {}
 
   protected abstract getDtoClasses(): {
     // query: new () => BaseQueryDto;

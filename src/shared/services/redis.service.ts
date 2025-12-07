@@ -14,7 +14,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     @Inject(redisConfig.KEY)
-    private readonly redisConfiguration: ConfigType<typeof redisConfig>,
+    private readonly redisConfiguration: ConfigType<typeof redisConfig>
   ) {}
 
   onModuleInit() {

@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsInt, Min, IsIn } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class BaseQueryDto {

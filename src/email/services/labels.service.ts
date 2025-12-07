@@ -8,7 +8,7 @@ import { SystemLabel } from '../enums/system-label.enum';
 export class LabelsService {
   constructor(
     private readonly settingService: SettingService,
-    private readonly googleapisService: GoogleapisService,
+    private readonly googleapisService: GoogleapisService
   ) {}
 
   async findAllGoogleLabels() {
@@ -47,7 +47,7 @@ export class LabelsService {
   async autoCreateLabels(): Promise<UpdateLabelDto> {
     const labels = (await this.findAll()) || ({} as UpdateLabelDto);
     const lang = await this.settingService.get<UpdateLabelDto>(
-      'email/lang-labels',
+      'email/lang-labels'
     );
 
     for (const enumValue of Object.values(SystemLabel)) {

@@ -7,7 +7,7 @@ import { SettingService } from '@shared/setting/services/setting.service';
 export class GrantsService {
   constructor(
     private readonly googleapisService: GoogleapisService,
-    private readonly settingService: SettingService,
+    private readonly settingService: SettingService
   ) {}
 
   generateAuthUrl() {

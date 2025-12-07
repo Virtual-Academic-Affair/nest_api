@@ -13,7 +13,7 @@ import { AuthService } from '@authentication/services/auth.service';
 export class AuthenticationController {
   constructor(
     private readonly userService: UsersService,
-    private readonly authService: AuthService,
+    private readonly authService: AuthService
   ) {}
 
   @Post('refresh')

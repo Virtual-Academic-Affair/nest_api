@@ -16,7 +16,7 @@ export default registerAs<JwtConfiguration>('jwt', () => {
     accessTokenTtl: parseInt(process.env.JWT_ACCESS_TOKEN_TTL ?? '3600', 10),
     refreshTokenTtl: parseInt(
       process.env.JWT_REFRESH_TOKEN_TTL ?? '604800',
-      10,
+      10
     ),
   };
 });

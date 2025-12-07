@@ -1,13 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ObjectLiteral, Repository, SelectQueryBuilder } from 'typeorm';
-import { BaseQueryDto } from '@shared/base-resource/dtos/base-query.dto';
+import { BaseQueryDto } from '@shared/resource/dtos/base-query.dto';
 
 @Injectable()
-export abstract class BaseResourceService<T extends ObjectLiteral> {
+export abstract class ResourceService<T extends ObjectLiteral> {
   protected abstract repository: Repository<T>;
-  protected abstract entityName: string;
+
   protected abstract searchableColumns: string[];
+
   protected abstract orderableColumns: string[];
+
+  protected get entityName(): string {
+    return this.repository.metadata.tableName;
+  }
 
   async findAll(queryDto: BaseQueryDto) {
     const page = Math.max(queryDto.page || 1);
@@ -73,15 +78,14 @@ export abstract class BaseResourceService<T extends ObjectLiteral> {
 
   async remove(id: number) {
     const entity = await this.findOne(id);
-    await this.repository.remove(entity);
-    return { message: 'Deleted successfully' };
+    return await this.repository.remove(entity);
   }
 
   protected applyCustomFilters(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     queryBuilder: SelectQueryBuilder<T>,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    queryDto: BaseQueryDto,
+    queryDto: BaseQueryDto
   ): void {
     return;
   }

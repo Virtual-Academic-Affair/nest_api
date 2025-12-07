@@ -3,7 +3,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AuthenticationModule } from '@authentication/authentication.module';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { SharedModule } from '@shared/shared.module';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { EmailModule } from './email/email.module';
 import { ApiResponseModule } from '@zabih-dev/nest-api-response';
 import { DatabaseType } from 'typeorm';
