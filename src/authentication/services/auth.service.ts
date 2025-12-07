@@ -10,7 +10,7 @@ import { RedisService } from '@shared/services/redis.service';
 import { randomUUID } from 'crypto';
 
 @Injectable()
-export class AuthenticationService {
+export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     @Inject(jwtConfig.KEY)

@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { UserQueryDto } from '@authentication/dtos/user/query.dto';
-import { AssignRoleDto } from '@authentication/dtos/authentication/assign-role.dto';
+import { AssignRoleDto } from '@authentication/dtos/auth/assign-role.dto';
 import { BaseResourceService } from '@shared/base-resource/services/base-resource.service';
 
 @Injectable()
@@ -25,8 +25,8 @@ export class UserService extends BaseResourceService<User> {
     role && queryBuilder.andWhere('user.role = :role', { role });
   }
 
-  async assignRole(assignRoleDto: AssignRoleDto) {
-    const { email, role } = assignRoleDto;
+  async assignRole(dto: AssignRoleDto) {
+    const { email, role } = dto;
     let user = await this.repository.findOne({ where: { email } });
 
     if (user) {
@@ -34,7 +34,7 @@ export class UserService extends BaseResourceService<User> {
       return await this.repository.save(user);
     }
 
-    user = this.repository.create(assignRoleDto);
+    user = this.repository.create(dto);
     return await this.repository.save(user);
   }
 }

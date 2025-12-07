@@ -8,13 +8,10 @@ import {
 } from 'typeorm';
 
 @Entity()
-@Unique(['accountId', 'gmailMessageId'])
-export class GmailEmail {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ default: 'default-email-account' })
-  accountId: string;
+@Unique(['gmailMessageId'])
+export class Email {
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column()
   gmailMessageId: string;
@@ -46,13 +43,12 @@ export class GmailEmail {
   @Column({ nullable: true })
   parentEmailId?: string;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   internalDate?: Date;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   fetchedAt?: Date;
 
-  // Store Gmail label IDs directly
   @Column('text', { array: true, default: '{}' })
   labelIds: string[];
 

@@ -1,205 +1,158 @@
 <!DOCTYPE html>
-<html lang="vi" data-theme="light">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Google OAuth Tester</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css"
-      rel="stylesheet"
-      type="text/css"
-    />
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-
-  <body class="min-h-screen bg-base-200 flex items-center justify-center p-4">
-    <div class="card bg-base-100 shadow-xl w-full max-w-xl">
-      <div class="card-body space-y-4">
-        <h1 class="text-2xl font-semibold text-center">
-          Google OAuth test client
-        </h1>
-
-        <div class="alert alert-info text-sm">
-          <span>
-            Trang này dùng để lấy <code>code</code> từ Google và gửi tới API
-            Nest (`/authentication/google`). Đảm bảo
-            <strong>redirect URI</strong> này đã được thêm vào Google Cloud
-            Console.
-          </span>
-        </div>
-
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Nest API base URL</span>
-          </label>
-          <input
-            id="api-base"
-            type="text"
-            class="input input-bordered"
-            value="http://localhost:3000"
-          />
-        </div>
-
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Redirect URI (khớp với Google console)</span>
-          </label>
-          <input
-            id="redirect-uri"
-            type="text"
-            class="input input-bordered"
-            value="http://127.0.0.1:5500/index.html"
-          />
-        </div>
-
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Google Client ID</span>
-          </label>
-          <input
-            id="client-id"
-            type="text"
-            class="input input-bordered"
-            value="661467940120-t38ofebtt1k63g2kc0elq2krovtmm622.apps.googleusercontent.com"
-          />
-        </div>
-
-        <button id="login-btn" class="btn btn-outline w-full gap-3">
-          <svg width="20" height="20" viewBox="0 0 24 24">
-            <path
-              fill="#4285F4"
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-            />
-          </svg>
-          Đăng nhập Google
-        </button>
-
-        <div id="status-box" class="hidden">
-          <h2 class="text-lg font-semibold">Kết quả</h2>
-          <pre
-            id="status-message"
-            class="bg-base-200 rounded p-3 text-sm whitespace-pre-wrap"
-          ></pre>
-          <div class="flex gap-2">
-            <button id="copy-access" class="btn btn-sm btn-outline flex-1">
-              Copy access token
-            </button>
-            <button id="copy-refresh" class="btn btn-sm btn-outline flex-1">
-              Copy refresh token
-            </button>
-          </div>
-        </div>
-      </div>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login & Grant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+  <div class="max-w-2xl mx-auto space-y-4">
+    <h1 class="text-2xl font-bold">Login & Grant</h1>
+    
+    <!-- Login Section -->
+    <div class="bg-white p-4 rounded shadow" id="loginSection">
+      <h2 class="text-lg font-semibold mb-2">Login</h2>
+      <button onclick="login()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Login with Google</button>
     </div>
 
-    <script>
-      const loginBtn = document.getElementById('login-btn');
-      const statusBox = document.getElementById('status-box');
-      const statusMessage = document.getElementById('status-message');
-      const copyAccessBtn = document.getElementById('copy-access');
-      const copyRefreshBtn = document.getElementById('copy-refresh');
-      const apiBaseInput = document.getElementById('api-base');
-      const clientIdInput = document.getElementById('client-id');
-      const redirectInput = document.getElementById('redirect-uri');
+    <!-- Payload Display -->
+    <div class="bg-white p-4 rounded shadow hidden" id="payloadSection">
+      <h2 class="text-lg font-semibold mb-2">Token Response</h2>
+      <pre class="bg-gray-50 p-2 rounded text-xs overflow-auto" id="tokenPayload"></pre>
+    </div>
 
-      const showStatus = (payload) => {
-        statusBox.classList.remove('hidden');
-        statusMessage.textContent = JSON.stringify(payload, null, 2);
-      };
+    <!-- User Info -->
+    <div class="bg-white p-4 rounded shadow hidden" id="userSection">
+      <h2 class="text-lg font-semibold mb-2">User Info (/me)</h2>
+      <pre class="bg-gray-50 p-2 rounded text-xs overflow-auto" id="userInfo"></pre>
+    </div>
 
-      const copyToClipboard = async (value) => {
-        if (!value) return alert('Không có dữ liệu để copy');
-        await navigator.clipboard.writeText(value);
-        alert('Đã copy!');
-      };
+    <!-- Grant Section (Admin only) -->
+    <div class="bg-white p-4 rounded shadow hidden" id="grantSection">
+      <h2 class="text-lg font-semibold mb-2">Grant Email Access (Admin)</h2>
+      <button onclick="grant()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Grant Gmail Access</button>
+    </div>
+  </div>
 
-      loginBtn.addEventListener('click', () => {
-        const clientId = clientIdInput.value.trim();
-        const redirectUri =
-          redirectInput.value.trim() ||
-          `${window.location.origin}${window.location.pathname}`;
+  <script>
+    const API_BASE = 'http://localhost:3000';
+    let accessToken = localStorage.getItem('accessToken') || '';
 
-        if (!clientId) {
-          return alert('Chưa nhập Google Client ID');
-        }
-        if (!redirectUri) {
-          return alert('Chưa nhập Redirect URI');
-        }
+    // Check if returning from OAuth
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
 
-        const authUrl = new URL(
-          'https://accounts.google.com/o/oauth2/v2/auth',
-        );
-        authUrl.searchParams.set('client_id', clientId);
-        authUrl.searchParams.set('redirect_uri', redirectUri);
-        authUrl.searchParams.set('response_type', 'code');
-        authUrl.searchParams.set('scope', 'openid email profile');
-        authUrl.searchParams.set('access_type', 'offline');
-        authUrl.searchParams.set('prompt', 'consent');
+    if (code) {
+      // If already logged in (has token) → grant flow
+      // If not logged in → login flow
+      if (accessToken) {
+        handleGrantCallback(code);
+      } else {
+        handleLoginCallback(code);
+      }
+    } else if (accessToken) {
+      loadUserInfo();
+    }
 
-        window.location.href = authUrl.toString();
+    async function login() {
+      try {
+        const res = await fetch(`${API_BASE}/authentication/google`);
+        const { data: url } = await res.json();
+        window.location.href = url;
+      } catch (e) {
+        alert('Error: ' + e.message);
+        console.error(e);
+      }
+    }
+
+    async function handleLoginCallback(code) {
+      const res = await fetch(`${API_BASE}/authentication/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
       });
+      const { data } = await res.json();
+      accessToken = data.accessToken;
+      localStorage.setItem('accessToken', accessToken);
+      document.getElementById('tokenPayload').textContent = JSON.stringify(data, null, 2);
+      document.getElementById('payloadSection').classList.remove('hidden');
+      window.history.replaceState({}, '', window.location.pathname);
+      await loadUserInfo();
+    }
 
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get('code');
-
-      const sendCodeToApi = async (authCode) => {
-        const apiBase = apiBaseInput.value.trim();
-        if (!apiBase) {
-          alert('Chưa nhập API base URL');
+    async function loadUserInfo() {
+      if (!accessToken) return;
+      try {
+        const res = await fetch(`${API_BASE}/authentication/auth/me`, {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({ message: 'Unknown error' }));
+          console.error('Failed to load user info:', error);
           return;
         }
+        const { data: user } = await res.json();
+        console.log('User info:', user);
+        document.getElementById('userInfo').textContent = JSON.stringify(user, null, 2);
+        document.getElementById('userSection').classList.remove('hidden');
+        if (user.role === 'admin') {
+          document.getElementById('grantSection').classList.remove('hidden');
+        }
+      } catch (e) {
+        console.error('Error loading user info:', e);
+      }
+    }
 
-        const res = await fetch(`${apiBase}/authentication/google`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: authCode }),
+    async function grant() {
+      try {
+        if (!accessToken) {
+          throw new Error('No access token. Please login first.');
+        }
+        const res = await fetch(`${API_BASE}/email/grant`, {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
         });
-
         if (!res.ok) {
-          const error = await res.json().catch(() => ({}));
-          throw new Error(
-            `API trả lỗi ${res.status}: ${
-              error.message || JSON.stringify(error)
-            }`,
-          );
+          const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
+          const error = errorData.data || errorData;
+          throw new Error(error.message || `HTTP ${res.status}: ${res.statusText}`);
         }
-
-        return res.json();
-      };
-
-      const initFromCallback = async () => {
-        if (!code) return;
-
-        try {
-          const data = await sendCodeToApi(code);
-          showStatus(data);
-          const { accessToken, refreshToken } = data;
-          copyAccessBtn.onclick = () =>
-            copyToClipboard(accessToken ?? 'Không có access token');
-          copyRefreshBtn.onclick = () =>
-            copyToClipboard(refreshToken ?? 'Không có refresh token');
-        } catch (err) {
-          showStatus({ error: err.message });
-        } finally {
-          const url = new URL(window.location.href);
-          url.search = '';
-          window.history.replaceState({}, '', url.toString());
+        const { data: url } = await res.json();
+        if (!url || url === 'undefined') {
+          throw new Error('Invalid URL returned from server');
         }
-      };
+        console.log('Grant URL:', url);
+        window.location.href = url;
+      } catch (e) {
+        alert('Error: ' + e.message);
+        console.error('Grant error:', e);
+      }
+    }
 
-      initFromCallback();
-    </script>
-  </body>
+    async function handleGrantCallback(code) {
+      try {
+        const res = await fetch(`${API_BASE}/email/grant`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({ code })
+        });
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
+          const error = errorData.data || errorData;
+          const message = error.message || errorData.message || 'Failed to grant access';
+          throw new Error(message);
+        }
+        const result = await res.json();
+        alert('Granted successfully!');
+        window.history.replaceState({}, '', window.location.pathname);
+      } catch (e) {
+        alert('Error granting access: ' + e.message);
+        console.error('Grant callback error:', e);
+      }
+    }
+  </script>
+</body>
 </html>

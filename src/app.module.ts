@@ -3,24 +3,23 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AuthenticationModule } from '@authentication/authentication.module';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { SharedModule } from '@shared/shared.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EmailModule } from './email/email.module';
-import { DatabaseType } from 'typeorm';
+import databaseConfig from '@shared/config/database.config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      load: [databaseConfig],
+    }),
     ScheduleModule.forRoot(),
-    TypeOrmModule.forRoot({
-      type: process.env.DB_TYPE as DatabaseType,
-      host: process.env.DB_HOST,
-      port: parseInt(process.env.DB_PORT ?? '5432', 10),
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      autoLoadEntities: true,
-      synchronize: true,
-    } as TypeOrmModuleOptions),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        return configService.get('database') as TypeOrmModuleOptions;
+      },
+    }),
     EmailModule,
     SharedModule,
     AuthenticationModule,

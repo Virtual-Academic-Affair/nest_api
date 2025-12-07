@@ -7,5 +7,3 @@ export enum SystemLabel {
   Academic = 'academic',
   Other = 'other',
 }
-
-export const SYSTEM_LABEL_KEYS = Object.values(SystemLabel);

@@ -1,23 +1,25 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { EmailService } from './services/email.service';
-import { EmailSessionGuard } from './guards/email-session.guard';
-import { GmailEmail } from './entities/email-email.entity';
-import { User } from '@authentication/entities/user.entity';
-import { EmailController } from './controllers/email.controller';
+import { ScheduleModule } from '@nestjs/schedule';
 import { SharedModule } from '@shared/shared.module';
+import { Email } from './entities/email.entity';
+import { User } from '@authentication/entities/user.entity';
+import { GoogleapisService } from './services/googleapis.service';
+import { LabelService } from './services/label.service';
+import { GrantService } from './services/grant.service';
+import { GrantController } from './controllers/grant.controller';
+import { LabelController } from './controllers/label.controller';
 
 @Module({
   imports: [
     ConfigModule,
-    JwtModule.register({}),
+    ScheduleModule.forRoot(),
     SharedModule,
-    TypeOrmModule.forFeature([GmailEmail, User]),
+    TypeOrmModule.forFeature([Email, User]),
   ],
-  controllers: [EmailController],
-  providers: [EmailService, EmailSessionGuard],
-  exports: [EmailService],
+  controllers: [GrantController, LabelController],
+  providers: [GoogleapisService, LabelService, GrantService],
+  exports: [GoogleapisService, LabelService, GrantService],
 })
 export class EmailModule {}

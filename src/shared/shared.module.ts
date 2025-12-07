@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '@authentication/entities/user.entity';
 import jwtConfig from '@shared/config/jwt.config';
 import rabbitmqConfig from '@shared/config/rabbitmq.config';
+import googleConfig from '@shared/config/google.config';
 import { BcryptService } from './hashing/bcrypt.service';
 import { HashingService } from './hashing/hashing.service';
 import { APP_GUARD } from '@nestjs/core';
@@ -25,6 +26,7 @@ import { RabbitMQService } from '@shared/services/rabbitmq.service';
     ConfigModule.forFeature(jwtConfig),
     ConfigModule.forFeature(redisConfig),
     ConfigModule.forFeature(rabbitmqConfig),
+    ConfigModule.forFeature(googleConfig),
   ],
   providers: [
     {
