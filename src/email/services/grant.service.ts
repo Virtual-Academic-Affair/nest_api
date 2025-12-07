@@ -34,7 +34,9 @@ export class GrantService {
     });
     const { data } = await gmail.users.getProfile({ userId: 'me' });
 
-    await this.settingService.updateOrCreate('email', {
+    const existing = (await this.settingService.get('email')) || {};
+    await this.settingService.set('email', {
+      ...existing,
       email: data.emailAddress,
       refreshToken: tokens.refresh_token,
     });

@@ -26,6 +26,6 @@ export class LabelService {
   }
 
   async updateLabels(mapping: LabelDto) {
-    await this.settingService.updateOrCreate('label', mapping);
+    await this.settingService.set('label', mapping);
   }
 }

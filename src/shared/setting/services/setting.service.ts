@@ -18,11 +18,7 @@ export class SettingService {
     return setting ? (setting.value as T) : null;
   }
 
-  async updateOrCreate(
-    key: string,
-    value: any,
-    isPartial = true,
-  ): Promise<Setting> {
+  async set(key: string, value: any): Promise<Setting> {
     const normalizedKey = key.toLowerCase();
     let setting = await this.settingRepository.findOne({
       where: { key: normalizedKey },
@@ -35,18 +31,7 @@ export class SettingService {
       });
     }
 
-    if (
-      isPartial &&
-      setting.value &&
-      typeof setting.value === 'object' &&
-      typeof value === 'object' &&
-      !Array.isArray(setting.value) &&
-      !Array.isArray(value)
-    ) {
-      setting.value = { ...setting.value, ...value };
-    } else {
-      setting.value = value;
-    }
+    setting.value = value;
 
     return await this.settingRepository.save(setting);
   }
