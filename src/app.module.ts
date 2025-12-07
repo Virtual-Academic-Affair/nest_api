@@ -6,9 +6,11 @@ import { SharedModule } from '@shared/shared.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EmailModule } from './email/email.module';
 import databaseConfig from '@shared/config/database.config';
+import { ApiResponseModule } from '@zabih-dev/nest-api-response';
 
 @Module({
   imports: [
+    ApiResponseModule,
     ConfigModule.forRoot({
       load: [databaseConfig],
     }),

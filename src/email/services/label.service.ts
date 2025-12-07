@@ -13,7 +13,6 @@ export class LabelService {
   async getGoogleLabels() {
     const client = await this.googleapisService.getGmailClient();
     const { data } = await client.users.labels.list({ userId: 'me' });
-    console.log(data);
     return (data.labels ?? [])
       .filter((label) => label.type !== 'system')
       .map((label) => ({
