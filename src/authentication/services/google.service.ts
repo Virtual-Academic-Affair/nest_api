@@ -42,9 +42,10 @@ export class GoogleService implements OnModuleInit {
     const payload = loginTicket.getPayload();
 
     // determine if the user is an admin
-    const adminEmails = await this.settingService.get<string[]>(
-      'authentication/admin-emails',
-    );
+    const adminEmails =
+      (await this.settingService.get<string[]>(
+        'authentication/admin-emails',
+      )) ?? [];
     const isAdmin = adminEmails.includes(payload.email);
 
     // saving
