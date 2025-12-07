@@ -1,8 +1,9 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { gmail_v1, google } from 'googleapis';
 import { OAuth2Client } from 'googleapis-common';
 import { SupperEmailSetting } from '../types/super-email-setting.type';
+import { SettingService } from '@shared/setting/services/setting.service';
 
 @Injectable()
 export class GoogleapisService implements OnModuleInit {
@@ -10,8 +11,7 @@ export class GoogleapisService implements OnModuleInit {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly settingService: SettingServic,
-    e
+    private readonly settingService: SettingService
   ) {}
 
   onModuleInit() {
@@ -21,10 +21,10 @@ export class GoogleapisService implements OnModuleInit {
 
   async getGmailClient(): Promise<gmail_v1.Gmail> {
     const account = await this.settingService.get<SupperEmailSetting>(
-      'email/super-e,mail'
+      'email/super-email'
     );
     if (!account?.email || !account.refreshToken) {
-      throw new Error('Super email not configured');
+      throw new NotFoundException('Super email account is not configured');
     }
 
     const oauthClient = this.oAuthClient;

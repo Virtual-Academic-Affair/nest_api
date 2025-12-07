@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ObjectLiteral, Repository, SelectQueryBuilder } from 'typeorm';
-import { BaseQueryDto } from '@shared/resource/dtos/base-query.dto';
+import { ResourceQueryDto } from '@shared/resource/dtos/base-query.dto';
 
 @Injectable()
 export abstract class ResourceService<T extends ObjectLiteral> {
@@ -14,7 +14,7 @@ export abstract class ResourceService<T extends ObjectLiteral> {
     return this.repository.metadata.tableName;
   }
 
-  async findAll(queryDto: BaseQueryDto) {
+  async findAll(queryDto: ResourceQueryDto) {
     const page = Math.max(queryDto.page || 1);
     const limit = Math.min(Math.max(1, queryDto.limit), 20);
 
@@ -85,7 +85,7 @@ export abstract class ResourceService<T extends ObjectLiteral> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     queryBuilder: SelectQueryBuilder<T>,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    queryDto: BaseQueryDto
+    queryDto: ResourceQueryDto
   ): void {
     return;
   }

@@ -5,7 +5,7 @@ import { User } from '../entities/user.entity';
 import { UserQueryDto } from '@authentication/dtos/users/query.dto';
 import { AssignRoleDto } from '@authentication/dtos/auth/assign-role.dto';
 import { ResourceService } from '@shared/resource/services/resource.service';
-import { BaseQueryDto } from '@shared/resource/dtos/base-query.dto';
+import { ResourceQueryDto } from '@shared/resource/dtos/base-query.dto';
 
 @Injectable()
 export class UsersService extends ResourceService<User> {
@@ -22,7 +22,7 @@ export class UsersService extends ResourceService<User> {
 
   protected applyCustomFilters(
     queryBuilder: SelectQueryBuilder<User>,
-    queryDto: BaseQueryDto
+    queryDto: ResourceQueryDto
   ): void {
     const { role } = queryDto as UserQueryDto;
     role && queryBuilder.andWhere(`${this.entityName}.role = :role`, { role });

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { SettingService } from '@shared/setting/services/setting.service';
 import { GoogleapisService } from './googleapis.service';
-import { UpdateLabelDto } from '../dto/label/update-label.dto';
 import { SystemLabel } from '../enums/system-label.enum';
+import { UpdateDto } from '../dto/labels/update.dto';
 
 @Injectable()
 export class LabelsService {
@@ -22,14 +22,6 @@ export class LabelsService {
       }));
   }
 
-  async findAll(): Promise<UpdateLabelDto> {
-    return await this.settingService.get<UpdateLabelDto>('email/labels');
-  }
-
-  async update(mapping: UpdateLabelDto) {
-    await this.settingService.set('email/labels', mapping);
-  }
-
   private async createGmailLabel(name: string): Promise<string> {
     const client = await this.googleapisService.getGmailClient();
     const { data } = await client.users.labels.create({
@@ -44,11 +36,17 @@ export class LabelsService {
     return data.id;
   }
 
-  async autoCreateLabels(): Promise<UpdateLabelDto> {
-    const labels = (await this.findAll()) || ({} as UpdateLabelDto);
-    const lang = await this.settingService.get<UpdateLabelDto>(
-      'email/lang-labels'
-    );
+  async findAll(): Promise<UpdateDto> {
+    return await this.settingService.get<UpdateDto>('email/labels');
+  }
+
+  async update(dto: UpdateDto) {
+    await this.settingService.set('email/labels', dto);
+  }
+
+  async autoCreateLabels(): Promise<UpdateDto> {
+    const labels = (await this.findAll()) || ({} as UpdateDto);
+    const lang = await this.settingService.get<UpdateDto>('email/lang-labels');
 
     for (const enumValue of Object.values(SystemLabel)) {
       labels[enumValue] ??= await this.createGmailLabel(lang[enumValue]);

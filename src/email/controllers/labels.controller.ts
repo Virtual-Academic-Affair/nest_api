@@ -5,7 +5,7 @@ import { AuthType } from '@shared/authentication/enums/auth-type.enum';
 import { Roles } from '@shared/authorization/decorators/roles.decorator';
 import { Role } from '@shared/authorization/enums/role.enum';
 import { LabelsService } from '../services/labels.service';
-import { UpdateLabelDto } from '../dto/label/update-label.dto';
+import { UpdateDto } from '../dto/labels/update.dto';
 
 @ApiTags('Email - Labels')
 @Auth(AuthType.Bearer)
@@ -25,8 +25,8 @@ export class LabelsController {
   }
 
   @Post()
-  update(@Body() mapping: UpdateLabelDto) {
-    return this.labelsService.update(mapping);
+  update(@Body() dto: UpdateDto) {
+    return this.labelsService.update(dto);
   }
 
   @Post('auto-create')

@@ -1,7 +1,7 @@
 import { IsOptional, IsString } from 'class-validator';
 import { SystemLabel } from '../../enums/system-label.enum';
 
-export class UpdateLabelDto {
+export class UpdateDto {
   @IsOptional()
   @IsString()
   [SystemLabel.ClassRegistration]?: string | null;

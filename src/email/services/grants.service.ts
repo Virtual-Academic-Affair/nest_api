@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
 import { GoogleapisService } from './googleapis.service';
 import { SettingService } from '@shared/setting/services/setting.service';
+import { CodeDto } from '../dto/grants/code.dto';
 
 @Injectable()
 export class GrantsService {
@@ -25,8 +26,10 @@ export class GrantsService {
     return this.googleapisService.oAuthClient.generateAuthUrl(options);
   }
 
-  async grant(code: string) {
-    const { tokens } = await this.googleapisService.oAuthClient.getToken(code);
+  async grant(dto: CodeDto) {
+    const { tokens } = await this.googleapisService.oAuthClient.getToken(
+      dto.code
+    );
     this.googleapisService.oAuthClient.setCredentials(tokens);
     const gmail = google.gmail({
       version: 'v1',

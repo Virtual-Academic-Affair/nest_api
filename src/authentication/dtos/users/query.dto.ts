@@ -1,8 +1,8 @@
 import { IsEnum, IsOptional } from 'class-validator';
 import { Role } from '@shared/authorization/enums/role.enum';
-import { BaseQueryDto } from '@shared/resource/dtos/base-query.dto';
+import { ResourceQueryDto } from '@shared/resource/dtos/resource-query.dto';
 
-export class UserQueryDto extends BaseQueryDto {
+export class UserDto extends ResourceQueryDto {
   @IsOptional()
   @IsEnum(Role)
   role?: Role;

@@ -9,9 +9,9 @@ import {
   Query,
 } from '@nestjs/common';
 import { ResourceService } from '../services/resource.service';
-import { BaseQueryDto } from '@shared/resource/dtos/base-query.dto';
 import { ObjectLiteral } from 'typeorm';
 import { validateDto } from '@shared/resource/utils/validate-dto.util';
+import { ResourceQueryDto } from '@shared/resource/dtos/resource-query.dto';
 
 export abstract class ResourceController<T extends ObjectLiteral> {
   protected constructor(protected readonly service: ResourceService<T>) {}
@@ -28,8 +28,10 @@ export abstract class ResourceController<T extends ObjectLiteral> {
   }
 
   @Get()
-  async findAll(@Query() dto: BaseQueryDto) {
-    return this.service.findAll((await this.dto('query', dto)) as BaseQueryDto);
+  async findAll(@Query() dto: ResourceQueryDto) {
+    return this.service.findAll(
+      (await this.dto('query', dto)) as ResourceQueryDto
+    );
   }
 
   @Get(':id')

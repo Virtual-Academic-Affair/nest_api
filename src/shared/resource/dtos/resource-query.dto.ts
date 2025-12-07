@@ -1,7 +1,7 @@
 import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class BaseQueryDto {
+export class ResourceQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()

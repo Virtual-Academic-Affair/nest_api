@@ -4,8 +4,8 @@ import { Auth } from '@shared/authentication/decorators/auth.decorator';
 import { AuthType } from '@shared/authentication/enums/auth-type.enum';
 import { Roles } from '@shared/authorization/decorators/roles.decorator';
 import { Role } from '@shared/authorization/enums/role.enum';
-import { CreateGrantDto } from '../dto/grant/create-grant.dto';
 import { GrantsService } from '../services/grants.service';
+import { CodeDto } from '../dto/grants/code.dto';
 
 @ApiTags('Email - Grant')
 @Auth(AuthType.Bearer)
@@ -15,12 +15,12 @@ export class GrantsController {
   constructor(private readonly grantsService: GrantsService) {}
 
   @Get()
-  generateAuthUrl() {
+  getAuthUrl() {
     return this.grantsService.generateAuthUrl();
   }
 
   @Post()
-  grant(@Body() dto: CreateGrantDto) {
-    return this.grantsService.grant(dto.code);
+  grant(@Body() dto: CodeDto) {
+    return this.grantsService.grant(dto);
   }
 }
