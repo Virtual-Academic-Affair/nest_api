@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { User } from '../entities/user.entity';
-import { UserQueryDto } from '@authentication/dtos/users/query.dto';
 import { AssignRoleDto } from '@authentication/dtos/auth/assign-role.dto';
 import { ResourceService } from '@shared/resource/services/resource.service';
-import { ResourceQueryDto } from '@shared/resource/dtos/base-query.dto';
+import { ResourceQueryDto } from '@shared/resource/dtos/resource-query.dto';
+import { QueryDto } from '@authentication/dtos/users/query.dto';
 
 @Injectable()
 export class UsersService extends ResourceService<User> {
@@ -24,7 +24,7 @@ export class UsersService extends ResourceService<User> {
     queryBuilder: SelectQueryBuilder<User>,
     queryDto: ResourceQueryDto
   ): void {
-    const { role } = queryDto as UserQueryDto;
+    const { role } = queryDto as QueryDto;
     role && queryBuilder.andWhere(`${this.entityName}.role = :role`, { role });
   }
 

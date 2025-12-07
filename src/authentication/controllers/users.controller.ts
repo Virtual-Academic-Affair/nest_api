@@ -5,7 +5,7 @@ import { Auth } from '@shared/authentication/decorators/auth.decorator';
 import { AuthType } from '@shared/authentication/enums/auth-type.enum';
 import { AssignRoleDto } from '@authentication/dtos/auth/assign-role.dto';
 import { User } from '../entities/user.entity';
-import { UserDto } from '@authentication/dtos/users/query.dto';
+import { QueryDto } from '@authentication/dtos/users/query.dto';
 import { UpdateDto } from '@authentication/dtos/users/update.dto';
 import { Roles } from '@shared/authorization/decorators/roles.decorator';
 import { Role } from '@shared/authorization/enums/role.enum';
@@ -24,7 +24,7 @@ export class UsersController extends ResourceController<User> {
   }
 
   protected getDtoClasses() {
-    return { query: UserDto, update: UpdateDto };
+    return { query: QueryDto, update: UpdateDto };
   }
 
   @Post('assign-role')

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ObjectLiteral, Repository, SelectQueryBuilder } from 'typeorm';
-import { ResourceQueryDto } from '@shared/resource/dtos/base-query.dto';
+import { ResourceQueryDto } from '@shared/resource/dtos/resource-query.dto';
 
 @Injectable()
 export abstract class ResourceService<T extends ObjectLiteral> {
