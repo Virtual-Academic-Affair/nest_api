@@ -16,6 +16,17 @@
       <button onclick="login()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Login with Google</button>
     </div>
 
+    <!-- Copy Token Section -->
+    <div class="bg-white p-4 rounded shadow hidden" id="copyTokenSection">
+      <h2 class="text-lg font-semibold mb-2">Access Token</h2>
+      <div class="flex items-center gap-2">
+        <button onclick="copyAccessToken()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 text-sm">
+          Copy Access Token
+        </button>
+        <span class="text-sm text-gray-600" id="copyStatus"></span>
+      </div>
+    </div>
+
     <!-- Payload Display -->
     <div class="bg-white p-4 rounded shadow hidden" id="payloadSection">
       <h2 class="text-lg font-semibold mb-2">Token Response</h2>
@@ -52,7 +63,53 @@
         handleLoginCallback(code);
       }
     } else if (accessToken) {
+      showCopyButton();
       loadUserInfo();
+    }
+
+    function showCopyButton() {
+      if (accessToken) {
+        document.getElementById('copyTokenSection').classList.remove('hidden');
+      }
+    }
+
+    async function copyAccessToken() {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('No access token available');
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(token);
+        const statusEl = document.getElementById('copyStatus');
+        statusEl.textContent = 'Copied!';
+        statusEl.classList.add('text-green-600');
+        setTimeout(() => {
+          statusEl.textContent = '';
+          statusEl.classList.remove('text-green-600');
+        }, 2000);
+      } catch (e) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = token;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          const statusEl = document.getElementById('copyStatus');
+          statusEl.textContent = 'Copied!';
+          statusEl.classList.add('text-green-600');
+          setTimeout(() => {
+            statusEl.textContent = '';
+            statusEl.classList.remove('text-green-600');
+          }, 2000);
+        } catch (err) {
+          alert('Failed to copy: ' + err);
+        }
+        document.body.removeChild(textArea);
+      }
     }
 
     async function login() {
@@ -77,6 +134,7 @@
       localStorage.setItem('accessToken', accessToken);
       document.getElementById('tokenPayload').textContent = JSON.stringify(data, null, 2);
       document.getElementById('payloadSection').classList.remove('hidden');
+      showCopyButton();
       window.history.replaceState({}, '', window.location.pathname);
       await loadUserInfo();
     }
