@@ -2,12 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { User } from '../entities/user.entity';
-import { UserQueryDto } from '@authentication/dtos/user/query.dto';
+import { UserQueryDto } from '@authentication/dtos/users/query.dto';
 import { AssignRoleDto } from '@authentication/dtos/auth/assign-role.dto';
 import { BaseResourceService } from '@shared/base-resource/services/base-resource.service';
 
 @Injectable()
-export class UserService extends BaseResourceService<User> {
+export class UsersService extends BaseResourceService<User> {
   protected repository: Repository<User>;
   protected entityName = 'user';
   protected searchableColumns = ['email', 'name'];

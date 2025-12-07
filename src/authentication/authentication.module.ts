@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { UserService } from './services/user.service';
-import { UserController } from './controllers/user.controller';
+import { UsersService } from './services/users.service';
+import { UsersController } from './controllers/users.controller';
 import { AuthenticationController } from './controllers/auth.controller';
 import { GoogleController } from './controllers/google.controller';
 import { GoogleService } from './services/google.service';
@@ -12,8 +12,8 @@ import { SharedModule } from '@shared/shared.module';
 import jwtConfig from '@shared/config/jwt.config';
 
 @Module({
-  controllers: [UserController, AuthenticationController, GoogleController],
-  providers: [UserService, GoogleService, AuthService],
+  controllers: [UsersController, AuthenticationController, GoogleController],
+  providers: [UsersService, GoogleService, AuthService],
   imports: [
     ConfigModule,
     ConfigModule.forFeature(jwtConfig),

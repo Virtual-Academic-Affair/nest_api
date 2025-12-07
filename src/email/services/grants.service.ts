@@ -4,7 +4,7 @@ import { GoogleapisService } from './googleapis.service';
 import { SettingService } from '@shared/setting/services/setting.service';
 
 @Injectable()
-export class GrantService {
+export class GrantsService {
   constructor(
     private readonly googleapisService: GoogleapisService,
     private readonly settingService: SettingService,

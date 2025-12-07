@@ -71,7 +71,7 @@ export abstract class BaseResourceService<T extends ObjectLiteral> {
     return await this.repository.save(entity);
   }
 
-  async delete(id: number) {
+  async remove(id: number) {
     const entity = await this.findOne(id);
     await this.repository.remove(entity);
     return { message: 'Deleted successfully' };

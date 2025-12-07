@@ -4,33 +4,33 @@ import { Auth } from '@shared/authentication/decorators/auth.decorator';
 import { AuthType } from '@shared/authentication/enums/auth-type.enum';
 import { Roles } from '@shared/authorization/decorators/roles.decorator';
 import { Role } from '@shared/authorization/enums/role.enum';
-import { LabelService } from '../services/label.service';
-import { LabelDto } from '../dto/label/label.dto';
+import { LabelsService } from '../services/labels.service';
+import { UpdateLabelDto } from '../dto/label/update-label.dto';
 
 @ApiTags('Email - Labels')
 @Auth(AuthType.Bearer)
 @Roles(Role.Admin)
-@Controller('email/label')
-export class LabelController {
-  constructor(private readonly labelService: LabelService) {}
+@Controller('email/labels')
+export class LabelsController {
+  constructor(private readonly labelsService: LabelsService) {}
 
   @Get('google-labels')
-  getLabelsFromGoogle() {
-    return this.labelService.getGoogleLabels();
+  findAllGoogleLabels() {
+    return this.labelsService.findAllGoogleLabels();
   }
 
   @Get()
-  getLabel() {
-    return this.labelService.getLabels();
+  findAll() {
+    return this.labelsService.findAll();
   }
 
   @Post()
-  updateLabels(@Body() mapping: LabelDto) {
-    return this.labelService.updateLabels(mapping);
+  update(@Body() mapping: UpdateLabelDto) {
+    return this.labelsService.update(mapping);
   }
 
   @Post('auto-create')
   autoCreateLabels() {
-    return this.labelService.autoCreateLabels();
+    return this.labelsService.autoCreateLabels();
   }
 }
