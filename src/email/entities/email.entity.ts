@@ -7,7 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity()
+@Entity('emails')
 @Unique(['gmailMessageId'])
 export class Email {
   @PrimaryGeneratedColumn()
