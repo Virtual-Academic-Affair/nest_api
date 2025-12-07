@@ -30,11 +30,7 @@ export class RolesGuard implements CanActivate {
 
     const hasRole = contextRoles.some((role) => user.role === role);
     if (!hasRole) {
-      throw new ForbiddenException(
-        `Required roles: ${contextRoles.join(', ')}, but user has role: ${
-          user.role
-        }`,
-      );
+      throw new ForbiddenException();
     }
 
     return true;
