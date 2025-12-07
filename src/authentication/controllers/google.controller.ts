@@ -15,6 +15,6 @@ export class GoogleController {
 
   @Post()
   authenticate(@Body() dto: CodeDto) {
-    return this.googleService.authenticate(dto.code);
+    return this.googleService.authenticate(dto);
   }
 }

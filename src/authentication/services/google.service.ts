@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { User } from '@authentication/entities/user.entity';
 import { Role } from '@shared/authorization/enums/role.enum';
 import { SettingService } from '@shared/setting/services/setting.service';
+import { CodeDto } from '@authentication/dtos/google/code.dto';
 
 @Injectable()
 export class GoogleService implements OnModuleInit {
@@ -32,21 +33,21 @@ export class GoogleService implements OnModuleInit {
     });
   }
 
-  async authenticate(code: string) {
-    const { tokens } = await this.oAuthClient.getToken(code);
-
+  async authenticate(dto: CodeDto) {
+    // authenticate the user with Google
+    const { tokens } = await this.oAuthClient.getToken(dto.code);
     const loginTicket = await this.oAuthClient.verifyIdToken({
       idToken: tokens.id_token,
     });
     const payload = loginTicket.getPayload();
 
-    const authSetting = await this.settingService.get<{
-      adminEmails: string[];
-    }>('authentication');
-
-    const adminEmails = authSetting?.adminEmails ?? [];
+    // determine if the user is an admin
+    const adminEmails = await this.settingService.get<string[]>(
+      'authentication/admin-emails',
+    );
     const isAdmin = adminEmails.includes(payload.email);
 
+    // saving
     let user = await this.userRepository.findOneBy({
       email: payload.email,
     });
@@ -56,18 +57,15 @@ export class GoogleService implements OnModuleInit {
       name: payload.name,
       picture: payload.picture,
       role: isAdmin ? Role.Admin : user?.role,
+      email: payload.email,
     };
 
     if (!user) {
-      user = this.userRepository.create({
-        email: payload.email,
-        ...userData,
-      });
+      user = await this.userRepository.save(userData);
     } else {
-      Object.assign(user, userData);
+      await this.userRepository.update(user.id, userData);
     }
 
-    await this.userRepository.save(user);
     return this.authService.generateTokens(user);
   }
 }

@@ -28,4 +28,9 @@ export class LabelController {
   updateLabels(@Body() mapping: LabelDto) {
     return this.labelService.updateLabels(mapping);
   }
+
+  @Post('auto-create')
+  autoCreateLabels() {
+    return this.labelService.autoCreateLabels();
+  }
 }

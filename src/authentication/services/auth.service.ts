@@ -8,6 +8,7 @@ import jwtConfig from '@shared/config/jwt.config';
 import { ActiveUserData } from '@shared/authentication/interfaces/active-user-data.interface';
 import { RedisService } from '@shared/services/redis.service';
 import { randomUUID } from 'crypto';
+import { RefreshTokenDto } from '@authentication/dtos/auth/refresh-token.dto';
 
 @Injectable()
 export class AuthService {
@@ -50,12 +51,12 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async refreshTokens(refreshToken: string) {
+  async refreshTokens(dto: RefreshTokenDto) {
     const payload = await this.jwtService
       .verifyAsync<{
         sub: number;
         refreshTokenId: string;
-      }>(refreshToken, this.jwtConfiguration)
+      }>(dto.refreshToken, this.jwtConfiguration)
       .catch(() => {
         throw new UnauthorizedException('Invalid refresh token');
       });

@@ -20,7 +20,9 @@ export class GoogleapisService implements OnModuleInit {
   }
 
   async getGmailClient(): Promise<gmail_v1.Gmail> {
-    const account = await this.settingService.get<SupperEmailSetting>('email');
+    const account = await this.settingService.get<SupperEmailSetting>(
+      'email/super-email',
+    );
     if (!account?.email || !account.refreshToken) {
       throw new Error('Super email not configured');
     }

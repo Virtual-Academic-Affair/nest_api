@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Auth } from '@shared/authentication/decorators/auth.decorator';
 import { AuthType } from '@shared/authentication/enums/auth-type.enum';
@@ -20,7 +20,7 @@ export class GrantController {
   }
 
   @Post()
-  register(@Body() dto: GrantDto) {
+  grant(@Body() dto: GrantDto) {
     return this.grantService.grant(dto.code);
   }
 }

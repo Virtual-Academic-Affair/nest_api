@@ -28,10 +28,8 @@ export abstract class BaseResourceController<T extends ObjectLiteral> {
   }
 
   @Get()
-  async findAll(@Query() queryDto: BaseQueryDto) {
-    return this.service.findAll(
-      (await this.dto('query', queryDto)) as BaseQueryDto,
-    );
+  async findAll(@Query() dto: BaseQueryDto) {
+    return this.service.findAll((await this.dto('query', dto)) as BaseQueryDto);
   }
 
   @Get(':id')
@@ -40,13 +38,13 @@ export abstract class BaseResourceController<T extends ObjectLiteral> {
   }
 
   @Post()
-  async create(@Body() createDto: any) {
-    return this.service.create(await this.dto('create', createDto));
+  async create(@Body() dto: any) {
+    return this.service.create(await this.dto('create', dto));
   }
 
   @Put(':id')
-  async update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: any) {
-    return this.service.update(id, await this.dto('update', updateDto));
+  async update(@Param('id', ParseIntPipe) id: number, @Body() dto: any) {
+    return this.service.update(id, await this.dto('update', dto));
   }
 
   @Delete(':id')

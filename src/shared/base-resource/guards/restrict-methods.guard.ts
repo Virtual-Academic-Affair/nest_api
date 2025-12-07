@@ -28,7 +28,7 @@ export class RestrictMethodsGuard implements CanActivate {
     const methodName = handler.name;
 
     if (options.only?.length) {
-      return this.checkAllowOnly(methodName, options.only);
+      return this.checkAllow(methodName, options.only);
     }
 
     if (options.except?.length) {
@@ -38,7 +38,7 @@ export class RestrictMethodsGuard implements CanActivate {
     return true;
   }
 
-  private checkAllowOnly(current: string, allowed: string[]): boolean {
+  private checkAllow(current: string, allowed: string[]): boolean {
     if (!allowed.includes(current)) {
       throw new ForbiddenException();
     }
