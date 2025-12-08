@@ -71,9 +71,8 @@ export class AuthService {
     const user = await this.userRepository.findOneBy({
       id: parseInt(userId, 10),
     });
-    throwUnless(user, new UnauthorizedException('User not found or inactive'));
     throwUnless(
-      user.isActive,
+      !!user?.isActive,
       new UnauthorizedException('User not found or inactive')
     );
 
