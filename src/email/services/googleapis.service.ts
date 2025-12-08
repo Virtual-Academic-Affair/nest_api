@@ -4,6 +4,7 @@ import { gmail_v1, google } from 'googleapis';
 import { OAuth2Client } from 'googleapis-common';
 import { SuperEmailSetting } from '../types/super-email-setting.type';
 import { SettingService } from '@shared/setting/services/setting.service';
+import { SettingKey } from '@shared/setting/enums/setting-key.enum';
 
 @Injectable()
 export class GoogleapisService implements OnModuleInit {
@@ -21,7 +22,7 @@ export class GoogleapisService implements OnModuleInit {
 
   async getGmailClient(): Promise<gmail_v1.Gmail> {
     const account = await this.settingService.get<SuperEmailSetting>(
-      'email/super-email'
+      SettingKey.EmailSuperEmail
     );
     throwUnless(
       account?.email && account.refreshToken,

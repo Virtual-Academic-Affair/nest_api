@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
 import { GoogleapisService } from './googleapis.service';
 import { SettingService } from '@shared/setting/services/setting.service';
+import { SettingKey } from '@shared/setting/enums/setting-key.enum';
 import { CodeDto } from '../dto/grants/code.dto';
 
 @Injectable()
@@ -46,7 +47,7 @@ export class GrantsService {
       new BadRequestException('Missing email address')
     );
 
-    await this.settingService.set('email/super-email', {
+    await this.settingService.set(SettingKey.EmailSuperEmail, {
       email: data.emailAddress,
       refreshToken: tokens.refresh_token,
     });

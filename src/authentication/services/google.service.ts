@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 import { User } from '@authentication/entities/user.entity';
 import { Role } from '@shared/authorization/enums/role.enum';
 import { SettingService } from '@shared/setting/services/setting.service';
+import { SettingKey } from '@shared/setting/enums/setting-key.enum';
 import { CodeDto } from '@authentication/dtos/google/code.dto';
 
 @Injectable()
@@ -56,7 +57,7 @@ export class GoogleService implements OnModuleInit {
 
     const adminEmails =
       (await this.settingService.get<string[]>(
-        'authentication/admin-emails'
+        SettingKey.AuthenticationAdminEmails
       )) ?? [];
     const normalizedAdminEmails = adminEmails
       .filter(Boolean)

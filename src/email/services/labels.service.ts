@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SettingService } from '@shared/setting/services/setting.service';
 import { GoogleapisService } from './googleapis.service';
 import { SystemLabel } from '../enums/system-label.enum';
+import { SettingKey } from '@shared/setting/enums/setting-key.enum';
 import { UpdateDto } from '../dto/labels/update.dto';
 
 @Injectable()
@@ -38,17 +39,18 @@ export class LabelsService {
   }
 
   async findAll(): Promise<UpdateDto> {
-    return await this.settingService.get<UpdateDto>('email/labels');
+    return await this.settingService.get<UpdateDto>(SettingKey.EmailLabels);
   }
 
   async update(dto: UpdateDto) {
-    await this.settingService.set('email/labels', dto);
+    await this.settingService.set(SettingKey.EmailLabels, dto);
   }
 
   async autoCreateLabels(): Promise<UpdateDto> {
     const labels = (await this.findAll()) || ({} as UpdateDto);
     const lang =
-      (await this.settingService.get<UpdateDto>('email/lang-labels')) || {};
+      (await this.settingService.get<UpdateDto>(SettingKey.EmailLangLabels)) ||
+      {};
 
     for (const enumValue of Object.values(SystemLabel)) {
       const labelName = lang[enumValue];
