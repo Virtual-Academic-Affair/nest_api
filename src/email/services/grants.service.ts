@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
 import { GoogleapisService } from './googleapis.service';
 import { SettingService } from '@shared/setting/services/setting.service';
@@ -30,12 +30,21 @@ export class GrantsService {
     const { tokens } = await this.googleapisService.oAuthClient.getToken(
       dto.code
     );
+    throwUnless(
+      tokens?.refresh_token,
+      new BadRequestException('Missing refresh token')
+    );
+
     this.googleapisService.oAuthClient.setCredentials(tokens);
     const gmail = google.gmail({
       version: 'v1',
       auth: this.googleapisService.oAuthClient,
     });
     const { data } = await gmail.users.getProfile({ userId: 'me' });
+    throwUnless(
+      data?.emailAddress,
+      new BadRequestException('Missing email address')
+    );
 
     await this.settingService.set('email/super-email', {
       email: data.emailAddress,

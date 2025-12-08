@@ -14,7 +14,7 @@ import { REQUEST_USER_KEY } from '@shared/authentication/guards/access-token.gua
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const contextRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -29,9 +29,7 @@ export class RolesGuard implements CanActivate {
     ];
 
     const hasRole = contextRoles.some((role) => user.role === role);
-    if (!hasRole) {
-      throw new ForbiddenException();
-    }
+    throwUnless(hasRole, new ForbiddenException());
 
     return true;
   }

@@ -59,9 +59,7 @@ export abstract class ResourceService<T extends ObjectLiteral> {
 
   async findOne(id: number) {
     const item = await this.repository.findOne({ where: { id } as any });
-    if (!item) {
-      throw new NotFoundException();
-    }
+    throwUnless(item, new NotFoundException('Resource not found'));
     return item;
   }
 

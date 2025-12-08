@@ -26,9 +26,7 @@ export class AuthService {
   }
 
   async generateTokens(user: User) {
-    if (!user.isActive) {
-      throw new UnauthorizedException('User inactive');
-    }
+    throwUnless(user?.isActive, new UnauthorizedException('User is inactive'));
 
     const accessToken = await this.signToken<Partial<ActiveUserData>>(
       user.id,
@@ -58,25 +56,26 @@ export class AuthService {
         this.jwtConfiguration
       )
       .catch(() => {
-        throw new UnauthorizedException('Invalid refresh token');
+        return null;
       });
-    if (!payload.refreshTokenId) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
+    throwUnless(
+      payload?.refreshTokenId,
+      new UnauthorizedException('Refresh token is invalid')
+    );
 
     const userId = await this.redisService.get(
       this.getRFTRedisKey(payload.refreshTokenId)
     );
-    if (!userId) {
-      throw new UnauthorizedException('Refresh token not found or expired');
-    }
+    throwUnless(userId, new UnauthorizedException('Refresh token has expired'));
 
     const user = await this.userRepository.findOneBy({
       id: parseInt(userId, 10),
     });
-    if (!user || !user.isActive) {
-      throw new UnauthorizedException('User not found or inactive');
-    }
+    throwUnless(user, new UnauthorizedException('User not found or inactive'));
+    throwUnless(
+      user.isActive,
+      new UnauthorizedException('User not found or inactive')
+    );
 
     await this.redisService.del(this.getRFTRedisKey(payload.refreshTokenId));
     return this.generateTokens(user);

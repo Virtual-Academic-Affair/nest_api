@@ -28,19 +28,21 @@ export class AccessTokenGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
-    if (!token) {
-      throw new UnauthorizedException();
-    }
+    throwUnless(token, new UnauthorizedException('Access token is missing'));
 
-    const payload = await this.jwtService.verifyAsync(
-      token,
-      this.jwtConfiguration
-    );
+    const payload = await this.jwtService
+      .verifyAsync(token, this.jwtConfiguration)
+      .catch(() => {
+        return null;
+      });
+    throwUnless(payload, new UnauthorizedException('Access token is invalid'));
 
     const user = await this.usersRepository.findOneBy({ id: payload.sub });
-    if (!user || !user.isActive) {
-      throw new UnauthorizedException('User not found or inactive');
-    }
+    throwUnless(user, new UnauthorizedException('User not found or inactive'));
+    throwUnless(
+      user.isActive,
+      new UnauthorizedException('User not found or inactive')
+    );
 
     request[REQUEST_USER_KEY] = payload;
     return true;

@@ -1,4 +1,8 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
 import { AuthService } from './auth.service';
@@ -34,35 +38,46 @@ export class GoogleService implements OnModuleInit {
   }
 
   async authenticate(dto: CodeDto) {
-    // authenticate the user with Google
     const { tokens } = await this.oAuthClient.getToken(dto.code);
+    throwUnless(
+      tokens?.id_token,
+      new UnauthorizedException('Google token is missing')
+    );
+
     const loginTicket = await this.oAuthClient.verifyIdToken({
       idToken: tokens.id_token,
     });
     const payload = loginTicket.getPayload();
+    throwUnless(
+      payload?.email,
+      new UnauthorizedException('Google email is missing')
+    );
+    const email = payload.email.toLowerCase();
 
-    // determine if the user is an admin
     const adminEmails =
       (await this.settingService.get<string[]>(
         'authentication/admin-emails'
       )) ?? [];
-    const isAdmin = adminEmails.includes(payload.email);
+    const normalizedAdminEmails = adminEmails
+      .filter(Boolean)
+      .map((item) => item.toLowerCase());
+    const isAdmin = normalizedAdminEmails.includes(email);
 
-    // saving
-    let user = await this.userRepository.findOneBy({ email: payload.email });
+    let user = await this.userRepository.findOneBy({ email });
     const userData = {
       googleId: payload.sub,
       name: payload.name,
       picture: payload.picture,
-      role: isAdmin ? Role.Admin : user?.role,
-      email: payload.email,
+      role: isAdmin ? Role.Admin : user?.role ?? Role.Student,
+      email,
     };
 
-    if (!user) {
-      user = await this.userRepository.save(userData);
-    } else {
-      await this.userRepository.update(user.id, userData);
-    }
+    user = await this.userRepository.save({
+      ...user,
+      ...userData,
+      isActive: user?.isActive ?? true,
+    });
+
     return this.authService.generateTokens(user);
   }
 }

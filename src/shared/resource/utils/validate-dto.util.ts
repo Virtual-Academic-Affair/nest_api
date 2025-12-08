@@ -19,7 +19,7 @@ export async function validateDto<T>(
       .map((err: { constraints: any }) => Object.values(err.constraints ?? {}))
       .flat();
 
-    throw new BadRequestException(messages);
+    throwIf(messages.length > 0, new BadRequestException(messages));
   }
 
   return dto;

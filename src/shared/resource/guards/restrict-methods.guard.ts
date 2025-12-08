@@ -14,7 +14,7 @@ import {
 export class RestrictMethodsGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const options = this.reflector.getAllAndOverride<RestrictMethodsOptions>(
       RESTRICT_METHODS_KEY,
       [context.getHandler(), context.getClass()]
@@ -28,27 +28,35 @@ export class RestrictMethodsGuard implements CanActivate {
     const methodName = handler.name;
 
     if (options.only?.length) {
-      return this.checkAllow(methodName, options.only);
+      return await this.checkAllow(methodName, options.only);
     }
 
     if (options.except?.length) {
-      return this.checkExcept(methodName, options.except);
+      return await this.checkExcept(methodName, options.except);
     }
 
     return true;
   }
 
-  private checkAllow(current: string, allowed: string[]): boolean {
-    if (!allowed.includes(current)) {
-      throw new ForbiddenException();
-    }
+  private async checkAllow(
+    current: string,
+    allowed: string[]
+  ): Promise<boolean> {
+    throwUnless(
+      allowed.includes(current),
+      new ForbiddenException('Method not allowed')
+    );
     return true;
   }
 
-  private checkExcept(current: string, denied: string[]): boolean {
-    if (denied.includes(current)) {
-      throw new ForbiddenException();
-    }
+  private async checkExcept(
+    current: string,
+    denied: string[]
+  ): Promise<boolean> {
+    throwIf(
+      denied.includes(current),
+      new ForbiddenException('Method not allowed')
+    );
     return true;
   }
 }

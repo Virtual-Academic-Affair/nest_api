@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SettingService } from '@shared/setting/services/setting.service';
 import { GoogleapisService } from './googleapis.service';
 import { SystemLabel } from '../enums/system-label.enum';
@@ -29,9 +29,10 @@ export class LabelsService {
       requestBody: { name },
     });
 
-    if (!data?.id) {
-      throw new Error(`Failed to create label: ${name}`);
-    }
+    throwUnless(
+      data?.id,
+      new InternalServerErrorException(`Failed to create label: ${name}`)
+    );
 
     return data.id;
   }
@@ -46,10 +47,18 @@ export class LabelsService {
 
   async autoCreateLabels(): Promise<UpdateDto> {
     const labels = (await this.findAll()) || ({} as UpdateDto);
-    const lang = await this.settingService.get<UpdateDto>('email/lang-labels');
+    const lang =
+      (await this.settingService.get<UpdateDto>('email/lang-labels')) || {};
 
     for (const enumValue of Object.values(SystemLabel)) {
-      labels[enumValue] ??= await this.createGmailLabel(lang[enumValue]);
+      const labelName = lang[enumValue];
+      throwUnless(
+        labelName,
+        new InternalServerErrorException(
+          `Missing label config for ${enumValue}`
+        )
+      );
+      labels[enumValue] ??= await this.createGmailLabel(labelName);
     }
 
     await this.update(labels);
