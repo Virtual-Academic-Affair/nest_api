@@ -3,5 +3,6 @@ export enum SettingKey {
   EmailLangLabels = 'email/lang-labels',
   EmailSuperEmail = 'email/super-email',
   EmailLastPullAt = 'email/last-pull-at',
+  EmailAllowedDomains = 'email/allowed-domains',
   AuthenticationAdminEmails = 'authentication/admin-emails',
 }

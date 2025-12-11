@@ -1,32 +1,23 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryGeneratedColumn,
-  Unique,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, Entity, Unique } from 'typeorm';
+import { BaseEntity } from '@shared/resource/entities/base.entity';
 
 @Entity('emails')
 @Unique(['gmailMessageId'])
-export class Email {
-  @PrimaryGeneratedColumn()
-  id: number;
-
+export class Email extends BaseEntity {
   @Column()
   gmailMessageId: string;
 
   @Column({ type: 'text', nullable: true })
-  messageIdHeader?: string;
+  headerMessageId?: string;
 
   @Column({ nullable: true })
   threadId?: string;
 
-  @Column({ nullable: true, type: 'text' })
-  content?: string;
-
   @Column({ nullable: true })
   subject?: string;
+
+  @Column({ nullable: true })
+  gmailLink?: string;
 
   @Column({ nullable: true })
   senderName?: string;
@@ -34,27 +25,9 @@ export class Email {
   @Column({ nullable: true })
   senderEmail?: string;
 
-  @Column({ nullable: true })
-  receiverName?: string;
-
-  @Column({ nullable: true })
-  receiverEmail?: string;
-
-  @Column({ nullable: true })
-  parentEmailId?: string;
-
   @Column({ type: 'timestamp', nullable: true })
-  internalDate?: Date;
-
-  @Column({ type: 'timestamp', nullable: true })
-  fetchedAt?: Date;
+  sentAt?: Date;
 
   @Column('text', { array: true, default: '{}' })
   labelIds: string[];
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }

@@ -4,12 +4,14 @@ import { GoogleapisService } from './googleapis.service';
 import { SettingService } from '@shared/setting/services/setting.service';
 import { SettingKey } from '@shared/setting/enums/setting-key.enum';
 import { CodeDto } from '../dto/grants/code.dto';
+import { EmailSyncService } from './email-sync.service';
 
 @Injectable()
 export class GrantsService {
   constructor(
     private readonly googleapisService: GoogleapisService,
-    private readonly settingService: SettingService
+    private readonly settingService: SettingService,
+    private readonly emailSyncService: EmailSyncService
   ) {}
 
   generateAuthUrl() {
@@ -52,6 +54,6 @@ export class GrantsService {
       refreshToken: tokens.refresh_token,
     });
 
-    return;
+    await this.emailSyncService.sync();
   }
 }

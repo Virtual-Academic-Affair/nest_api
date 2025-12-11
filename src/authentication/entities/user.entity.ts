@@ -1,11 +1,9 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 import { Role } from '@shared/authorization/enums/role.enum';
+import { BaseEntity } from '@shared/resource/entities/base.entity';
 
 @Entity('users')
-export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
-
+export class User extends BaseEntity {
   @Column({ unique: true, nullable: false })
   email: string;
 

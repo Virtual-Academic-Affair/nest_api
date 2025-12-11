@@ -1,16 +1,8 @@
-import {
-  BeforeInsert,
-  BeforeUpdate,
-  Column,
-  Entity,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { BeforeInsert, BeforeUpdate, Column, Entity } from 'typeorm';
+import { BaseEntity } from '@shared/resource/entities/base.entity';
 
 @Entity()
-export class Setting {
-  @PrimaryGeneratedColumn()
-  id: number;
-
+export class Setting extends BaseEntity {
   @Column({ unique: true, nullable: false })
   key: string;
 

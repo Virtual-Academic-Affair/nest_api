@@ -212,7 +212,7 @@
             accessToken,
             new Error('No access token. Please login first.')
           );
-          const res = await fetch(`${API_BASE}/email/grant`, {
+          const res = await fetch(`${API_BASE}/email/grants`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
           if (!res.ok) {
@@ -228,7 +228,10 @@
             );
           }
           const { data: url } = await res.json();
-          throwUnless(url && url !== 'undefined', new Error('Invalid URL returned from server'));
+          throwUnless(
+            url && url !== 'undefined',
+            new Error('Invalid URL returned from server')
+          );
           console.log('Grant URL:', url);
           window.location.href = url;
         } catch (e) {
@@ -239,7 +242,7 @@
 
       async function handleGrantCallback(code) {
         try {
-          const res = await fetch(`${API_BASE}/email/grant`, {
+          const res = await fetch(`${API_BASE}/email/grants`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
