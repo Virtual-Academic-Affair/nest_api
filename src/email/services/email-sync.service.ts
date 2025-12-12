@@ -69,7 +69,7 @@ export class EmailSyncService {
 
     const lastPull =
       (await this.settingService.get<string>(SettingKey.EmailLastPullAt)) ??
-      new Date(Date.now() - 60 * 60_000).toISOString();
+      new Date(Date.now() - 24 * 60 * 60_000).toISOString();
 
     const since = new Date(lastPull);
     const gmail = await this.googleapisService.getGmailClient();
@@ -151,15 +151,12 @@ export class EmailSyncService {
       sentAt: parsed.headers.date ? new Date(parsed.headers.date) : undefined,
 
       senderEmail,
-      senderName: parsed.headers.from
-        ?.match(/^(.*)<(.+)>$/)?.[1]
-        ?.trim()
-        .replace(/^"|"$/g, ''),
+      senderName: parsed.headers.from,
     });
 
     await this.rabbitmqService.publish('email.ingest', {
-      ...email,
-      internal: { id: email.id },
+      internal: { id: email.id, gmailMessageId: id },
+      subject: parsed.headers.subject,
       content: htmlToText(parsed.textHtml ?? parsed.textPlain ?? '', {
         wordwrap: false,
       }),

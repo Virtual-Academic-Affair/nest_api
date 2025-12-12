@@ -16,15 +16,11 @@ export class UpdateDto {
 
   @IsOptional()
   @IsString()
-  [SystemLabel.Inquiry]?: string | null;
+  [SystemLabel.GraduationInquiry]?: string | null;
 
   @IsOptional()
   @IsString()
-  [SystemLabel.Graduation]?: string | null;
-
-  @IsOptional()
-  @IsString()
-  [SystemLabel.Academic]?: string | null;
+  [SystemLabel.AcademicInquiry]?: string | null;
 
   @IsOptional()
   @IsString()
