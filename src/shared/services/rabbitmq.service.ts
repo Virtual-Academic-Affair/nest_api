@@ -81,15 +81,32 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       await ch.assertQueue(queue, { durable: true });
       await ch.bindQueue(queue, EXCHANGE, routingKey);
 
-      await ch.consume(queue, async (msg) => {
-        if (!msg) {
-          return;
-        }
+      await ch.consume(
+        queue,
+        async (msg) => {
+          if (!msg) {
+            return;
+          }
 
-        const data = JSON.parse(msg.content.toString());
-        await handler(data);
-        ch.ack(msg);
-      });
+          const raw = msg.content.toString();
+          try {
+            const data = JSON.parse(raw);
+            await handler(data);
+            ch.ack(msg);
+          } catch (error) {
+            this.logger.error('RabbitMQ handler failed', {
+              error: error?.message ?? error,
+              raw,
+              queue,
+              routingKey,
+              redelivered: msg.fields.redelivered,
+            });
+
+            ch.nack(msg, false, !msg.fields.redelivered);
+          }
+        },
+        { noAck: false }
+      );
     });
 
     await this.channel.addSetup((ch: amqp.Channel) =>

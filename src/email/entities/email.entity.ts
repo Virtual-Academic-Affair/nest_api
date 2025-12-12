@@ -32,6 +32,6 @@ export class Email extends BaseEntity {
   @Column('text', { array: true, default: '{}' })
   labelIds: string[];
 
-  @Column('text', { array: true, default: '{}' })
+  @Column('text', { array: true, nullable: true })
   systemLabels: SystemLabel[];
 }
