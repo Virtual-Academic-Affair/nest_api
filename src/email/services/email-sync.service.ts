@@ -154,7 +154,7 @@ export class EmailSyncService {
       senderName: parsed.headers.from,
     });
 
-    await this.rabbitmqService.publish('email.ingest', {
+    await this.rabbitmqService.publish('email.ingested', {
       internal: { id: email.id, gmailMessageId: id },
       subject: parsed.headers.subject,
       content: htmlToText(parsed.textHtml ?? parsed.textPlain ?? '', {
