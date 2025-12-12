@@ -9,6 +9,7 @@ import { GoogleapisService } from './services/googleapis.service';
 import { LabelsService } from './services/labels.service';
 import { GrantsService } from './services/grants.service';
 import { EmailSyncService } from './services/email-sync.service';
+import { EmailSyncScheduler } from './scheduler/email-sync.scheduler';
 import { GrantsController } from './controllers/grants.controller';
 import { LabelsController } from './controllers/labels.controller';
 
@@ -25,6 +26,7 @@ import { LabelsController } from './controllers/labels.controller';
     LabelsService,
     GrantsService,
     EmailSyncService,
+    EmailSyncScheduler,
   ],
   exports: [GoogleapisService, LabelsService, GrantsService, EmailSyncService],
 })
