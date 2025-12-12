@@ -1,5 +1,5 @@
 import { IsOptional, IsString } from 'class-validator';
-import { SystemLabel } from '../../enums/system-label.enum';
+import { SystemLabel } from '@shared/enums/system-label.enum';
 
 export class UpdateDto {
   @IsOptional()

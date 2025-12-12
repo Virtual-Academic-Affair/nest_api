@@ -12,6 +12,7 @@ import { SettingKey } from '@shared/setting/enums/setting-key.enum';
 import { SuperEmailSetting } from '../types/super-email-setting.type';
 import { Role } from '@shared/authorization/enums/role.enum';
 import { User } from '@authentication/entities/user.entity';
+import { EmailRoutingKey } from '@shared/enums/rabbitmq.enum';
 
 @Injectable()
 export class EmailSyncService {
@@ -154,7 +155,7 @@ export class EmailSyncService {
       senderName: parsed.headers.from,
     });
 
-    await this.rabbitmqService.publish('email.ingested', {
+    await this.rabbitmqService.publish(EmailRoutingKey.Ingested, {
       internal: { id: email.id, gmailMessageId: id },
       subject: parsed.headers.subject,
       content: htmlToText(parsed.textHtml ?? parsed.textPlain ?? '', {
