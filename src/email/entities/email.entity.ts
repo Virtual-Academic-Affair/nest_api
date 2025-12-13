@@ -18,9 +18,6 @@ export class Email extends BaseEntity {
   subject?: string;
 
   @Column({ nullable: true })
-  gmailLink?: string;
-
-  @Column({ nullable: true })
   senderName?: string;
 
   @Column({ nullable: true })

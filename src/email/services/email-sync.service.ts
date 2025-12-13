@@ -144,10 +144,10 @@ export class EmailSyncService {
       threadId: data.threadId,
 
       subject: parsed.headers.subject,
-      gmailLink:
-        'https://mail.google.com/mail/' +
-        '?authuser=30032004nguyenducmanh@gmail.com#search/' +
-        encodeURIComponent(`rfc822msgid:${parsed.headers['message-id']}`),
+      // gmailLink:
+      //   'https://mail.google.com/mail/' +
+      //   '?authuser=<super_email>#search/' +
+      //   encodeURIComponent(`rfc822msgid:${parsed.headers['message-id']}`),
       labelIds: data.labelIds ?? [],
       sentAt: parsed.headers.date ? new Date(parsed.headers.date) : undefined,
 
