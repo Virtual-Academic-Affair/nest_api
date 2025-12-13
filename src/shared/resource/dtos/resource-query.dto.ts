@@ -20,9 +20,9 @@ export class ResourceQueryDto {
 
   @IsOptional()
   @IsString()
-  order_col?: string;
+  orderCol?: string;
 
   @IsOptional()
   @IsIn(['ASC', 'DESC'])
-  order_dir?: 'ASC' | 'DESC' = 'ASC';
+  orderDir?: 'ASC' | 'DESC' = 'ASC';
 }
