@@ -14,7 +14,7 @@ import { UpdateDto } from '../dto/labels/update.dto';
 export class LabelsController {
   constructor(private readonly labelsService: LabelsService) {}
 
-  @Get('google-labels')
+  @Get('googleLabels')
   findAllGoogleLabels() {
     return this.labelsService.findAllGoogleLabels();
   }
@@ -29,7 +29,7 @@ export class LabelsController {
     return this.labelsService.update(dto);
   }
 
-  @Post('auto-create')
+  @Post('autoCreate')
   autoCreateLabels() {
     return this.labelsService.autoCreateLabels();
   }
