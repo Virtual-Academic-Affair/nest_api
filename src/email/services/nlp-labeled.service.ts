@@ -10,7 +10,7 @@ import { Email } from '../entities/email.entity';
 import { SettingService } from '@shared/setting/services/setting.service';
 import { GoogleapisService } from './googleapis.service';
 import { SettingKey } from '@shared/setting/enums/setting-key.enum';
-import { NlpLabeledDto } from '../dto/nlp-labeled.dto';
+import { NlpLabeledDto } from '../dto/nlp/nlp-labeled.dto';
 import { validateDto } from '@shared/resource/utils/validate-dto.util';
 import { UpdateDto } from '../dto/labels/update.dto';
 
