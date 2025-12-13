@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Auth } from '@shared/authentication/decorators/auth.decorator';
 import { AuthType } from '@shared/authentication/enums/auth-type.enum';
@@ -24,7 +24,7 @@ export class LabelsController {
     return this.labelsService.findAll();
   }
 
-  @Post()
+  @Put()
   update(@Body() dto: UpdateDto) {
     return this.labelsService.update(dto);
   }
