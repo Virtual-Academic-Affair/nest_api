@@ -1,4 +1,4 @@
-import { Column, Entity, Unique } from 'typeorm';
+import { Column, Entity, Index, Unique } from 'typeorm';
 import { SystemLabel } from '@shared/enums/system-label.enum';
 import { BaseEntity } from '@shared/resource/entities/base.entity';
 
@@ -33,5 +33,6 @@ export class Email extends BaseEntity {
   labelIds: string[];
 
   @Column('text', { array: true, nullable: true })
+  @Index('idx_emails_system_labels', { synchronize: false })
   systemLabels: SystemLabel[];
 }

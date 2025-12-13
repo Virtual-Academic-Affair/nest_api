@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { RabbitMQService } from '@shared/services/rabbitmq.service';
 import {
   EmailRoutingKey,
@@ -40,7 +40,7 @@ export class NlpLabeledService implements OnModuleInit {
     const systemLabels = payload.labels;
 
     const email = await this.emailRepo.findOne({
-      where: [{ gmailMessageId, systemLabels: null }, { id: emailId }],
+      where: [{ gmailMessageId, systemLabels: IsNull(), id: emailId }],
     });
 
     if (!email) {

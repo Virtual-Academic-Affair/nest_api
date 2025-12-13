@@ -13,6 +13,8 @@ import { EmailSyncScheduler } from './scheduler/email-sync.scheduler';
 import { NlpLabeledService } from './services/nlp-labeled.service';
 import { GrantsController } from './controllers/grants.controller';
 import { LabelsController } from './controllers/labels.controller';
+import { MessagesController } from './controllers/messages.controller';
+import { MessagesService } from './services/messages.service';
 
 @Module({
   imports: [
@@ -21,13 +23,14 @@ import { LabelsController } from './controllers/labels.controller';
     SharedModule,
     TypeOrmModule.forFeature([Email, User]),
   ],
-  controllers: [GrantsController, LabelsController],
+  controllers: [GrantsController, LabelsController, MessagesController],
   providers: [
     GoogleapisService,
     LabelsService,
     GrantsService,
     EmailSyncService,
     NlpLabeledService,
+    MessagesService,
     EmailSyncScheduler,
   ],
   exports: [
@@ -36,6 +39,7 @@ import { LabelsController } from './controllers/labels.controller';
     GrantsService,
     EmailSyncService,
     NlpLabeledService,
+    MessagesService,
   ],
 })
 export class EmailModule {}

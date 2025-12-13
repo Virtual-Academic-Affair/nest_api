@@ -27,9 +27,9 @@ export class NlpLabeledDto {
   @Type(() => NlpLabeledInternalDto)
   internal!: NlpLabeledInternalDto;
 
-  @IsOptional()
+  @IsDefined()
   @IsArray()
   @ArrayUnique()
   @IsEnum(SystemLabel, { each: true })
-  labels?: SystemLabel[];
+  labels!: SystemLabel[];
 }
