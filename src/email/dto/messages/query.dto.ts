@@ -7,5 +7,5 @@ export class QueryDto extends ResourceQueryDto {
   @IsArray()
   @ArrayUnique()
   @IsEnum(SystemLabel, { each: true })
-  labels?: SystemLabel[];
+  systemLabels?: SystemLabel[];
 }

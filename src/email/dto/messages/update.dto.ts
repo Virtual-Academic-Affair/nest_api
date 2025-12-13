@@ -6,5 +6,5 @@ export class UpdateDto {
   @IsArray()
   @ArrayUnique()
   @IsEnum(SystemLabel, { each: true })
-  labels!: SystemLabel[];
+  systemLabels!: SystemLabel[];
 }

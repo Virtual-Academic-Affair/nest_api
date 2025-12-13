@@ -23,10 +23,14 @@ export class MessagesService extends ResourceService<Email> {
     queryBuilder: SelectQueryBuilder<Email>,
     queryDto: ResourceQueryDto
   ): void {
-    const { labels } = queryDto as QueryDto;
-    labels &&
-      queryBuilder.andWhere(`${this.entityName}.systemLabels @> :labels`, {
-        labels,
-      });
+    const { systemLabels } = queryDto as QueryDto;
+
+    systemLabels &&
+      queryBuilder.andWhere(
+        `${this.entityName}.systemLabels @> :systemLabels`,
+        {
+          systemLabels,
+        }
+      );
   }
 }

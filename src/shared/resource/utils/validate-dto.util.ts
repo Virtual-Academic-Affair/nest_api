@@ -4,7 +4,8 @@ import { validateOrReject } from 'class-validator';
 
 export async function validateDto<T>(
   DtoClass: new () => T,
-  data: any
+  data: any,
+  forbidNonWhitelisted = false
 ): Promise<T> {
   const dto = plainToInstance(DtoClass, data, {
     enableImplicitConversion: true,
@@ -13,6 +14,7 @@ export async function validateDto<T>(
   try {
     await validateOrReject(dto as object, {
       whitelist: true,
+      forbidNonWhitelisted,
     });
   } catch (errors) {
     const messages = errors

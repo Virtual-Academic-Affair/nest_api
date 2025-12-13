@@ -24,14 +24,12 @@ export abstract class ResourceController<T extends ObjectLiteral> {
 
   protected async dto(key: 'query' | 'create' | 'update', data: any) {
     const DtoClass = this.getDtoClasses()[key] as new () => any;
-    return validateDto(DtoClass, data);
+    return validateDto(DtoClass, data, key !== 'query');
   }
 
   @Get()
-  async findAll(@Query() dto: ResourceQueryDto) {
-    return this.service.findAll(
-      (await this.dto('query', dto)) as ResourceQueryDto
-    );
+  async findAll(@Query() dto: any) {
+    return this.service.findAll(await this.dto('query', dto));
   }
 
   @Get(':id')
