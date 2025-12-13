@@ -1,8 +1,8 @@
 import {
   Injectable,
   Logger,
-  OnModuleInit,
   OnModuleDestroy,
+  OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as amqp from 'amqplib';
@@ -14,10 +14,17 @@ const EXCHANGE_TYPE = 'direct';
 @Injectable()
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RabbitMQService.name);
+
   private connection: amqpManager.AmqpConnectionManager;
+
   private channel: amqpManager.ChannelWrapper;
 
   private subscribers = new Map<string, boolean>();
+
+  private subscriberSetup = new Map<
+    string,
+    (ch: amqp.Channel) => Promise<void>
+  >();
 
   constructor(private readonly config: ConfigService) {}
 
@@ -41,7 +48,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
 
     this.connection.on('connect', () => this.logger.log('RabbitMQ connected'));
     this.connection.on('disconnect', (e: Error) =>
-      this.logger.warn(`RabbitMQ disconnected: ${e?.message}`),
+      this.logger.warn(`RabbitMQ disconnected: ${e?.message}`)
     );
   }
 
@@ -52,33 +59,24 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
 
   async publish(routingKey: string, message: unknown) {
     await this.channel.waitForConnect();
-
     const buffer = Buffer.from(JSON.stringify(message));
-
     return this.channel.publish(EXCHANGE, routingKey, buffer, {
       persistent: true,
       contentType: 'application/json',
     });
   }
 
-  private subscriberSetup = new Map<
-    string,
-    (ch: amqp.Channel) => Promise<void>
-  >();
-
   async subscribe<T>(
     queue: string,
     routingKey: string,
-    handler: (data: T) => Promise<void> | void,
+    handler: (data: T) => Promise<void> | void
   ) {
     const key = `${queue}|${routingKey}`;
-
     if (this.subscribers.has(key)) {
       return;
     }
 
     this.subscribers.set(key, true);
-
     this.subscriberSetup.set(key, async (ch: amqp.Channel) => {
       await ch.assertQueue(queue, { durable: true });
       await ch.bindQueue(queue, EXCHANGE, routingKey);
@@ -90,21 +88,29 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
             return;
           }
 
+          const raw = msg.content.toString();
           try {
-            const data = JSON.parse(msg.content.toString());
+            const data = JSON.parse(raw);
             await handler(data);
             ch.ack(msg);
-          } catch (err: any) {
-            this.logger.error(err.message);
-            ch.nack(msg, false, false);
+          } catch (error) {
+            this.logger.error('RabbitMQ handler failed', {
+              error: error?.message ?? error,
+              raw,
+              queue,
+              routingKey,
+              redelivered: msg.fields.redelivered,
+            });
+
+            ch.nack(msg, false, !msg.fields.redelivered);
           }
         },
-        { noAck: false },
+        { noAck: false }
       );
     });
 
     await this.channel.addSetup((ch: amqp.Channel) =>
-      this.subscriberSetup.get(key)?.(ch),
+      this.subscriberSetup.get(key)?.(ch)
     );
   }
 }

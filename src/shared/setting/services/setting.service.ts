@@ -7,7 +7,7 @@ import { Setting } from '@shared/setting/entities/setting.entity';
 export class SettingService {
   constructor(
     @InjectRepository(Setting)
-    private readonly settingRepository: Repository<Setting>,
+    private readonly settingRepository: Repository<Setting>
   ) {}
 
   async get<T = any>(key: string): Promise<T | null> {
@@ -18,11 +18,7 @@ export class SettingService {
     return setting ? (setting.value as T) : null;
   }
 
-  async updateOrCreate(
-    key: string,
-    value: any,
-    isPartial = true,
-  ): Promise<Setting> {
+  async set(key: string, value: any, isPartial?: true): Promise<Setting> {
     const normalizedKey = key.toLowerCase();
     let setting = await this.settingRepository.findOne({
       where: { key: normalizedKey },
@@ -37,11 +33,8 @@ export class SettingService {
 
     if (
       isPartial &&
-      setting.value &&
       typeof setting.value === 'object' &&
-      typeof value === 'object' &&
-      !Array.isArray(setting.value) &&
-      !Array.isArray(value)
+      setting.value !== null
     ) {
       setting.value = { ...setting.value, ...value };
     } else {

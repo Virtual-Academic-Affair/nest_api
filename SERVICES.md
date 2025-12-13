@@ -44,18 +44,18 @@ const value = await this.settings.get<string>('setting_key');
 const config = await this.settings.get<{ host: string; port: number }>('email_config');
 ```
 
-### Update or Create
+### Set
 ```typescript
 // Create/update simple value
-await this.settings.updateOrCreate('max_upload', '10485760');
+await this.settings.set('max_upload', '10485760');
 
 // Partial merge object (isPartial = true, default)
-await this.settings.updateOrCreate('email_config', { host: 'smtp.gmail.com' }, true);
+await this.settings.set('email_config', { host: 'smtp.gmail.com' }, true);
 // Existing: { host: 'old', port: 587 }
 // Result: { host: 'smtp.gmail.com', port: 587 }
 
 // Replace entire object (isPartial = false)
-await this.settings.updateOrCreate('email_config', { host: 'smtp.gmail.com' }, false);
+await this.settings.set('email_config', { host: 'smtp.gmail.com' }, false);
 // Result: { host: 'smtp.gmail.com' }
 ```
 
