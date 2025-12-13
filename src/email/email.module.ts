@@ -10,7 +10,7 @@ import { LabelsService } from './services/labels.service';
 import { GrantsService } from './services/grants.service';
 import { EmailSyncService } from './services/email-sync.service';
 import { EmailSyncScheduler } from './scheduler/email-sync.scheduler';
-import { NlpLabeledConsumer } from './services/nlp-labeled.consumer';
+import { NlpLabeledService } from './services/nlp-labeled.service';
 import { GrantsController } from './controllers/grants.controller';
 import { LabelsController } from './controllers/labels.controller';
 
@@ -27,7 +27,7 @@ import { LabelsController } from './controllers/labels.controller';
     LabelsService,
     GrantsService,
     EmailSyncService,
-    NlpLabeledConsumer,
+    NlpLabeledService,
     EmailSyncScheduler,
   ],
   exports: [
@@ -35,7 +35,7 @@ import { LabelsController } from './controllers/labels.controller';
     LabelsService,
     GrantsService,
     EmailSyncService,
-    NlpLabeledConsumer,
+    NlpLabeledService,
   ],
 })
 export class EmailModule {}

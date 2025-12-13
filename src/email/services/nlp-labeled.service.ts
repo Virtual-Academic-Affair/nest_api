@@ -15,7 +15,7 @@ import { validateDto } from '@shared/resource/utils/validate-dto.util';
 import { UpdateDto } from '../dto/labels/update.dto';
 
 @Injectable()
-export class NlpLabeledConsumer implements OnModuleInit {
+export class NlpLabeledService implements OnModuleInit {
   constructor(
     private readonly rabbitmqService: RabbitMQService,
     private readonly settingService: SettingService,
