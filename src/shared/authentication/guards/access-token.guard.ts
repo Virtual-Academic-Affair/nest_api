@@ -30,11 +30,11 @@ export class AccessTokenGuard implements CanActivate {
     const token = this.extractTokenFromHeader(request);
     throwUnless(token, new UnauthorizedException('Access token is missing'));
 
-    const payload = await this.jwtService
-      .verifyAsync(token, this.jwtConfiguration)
-      .catch(() => {
-        return null;
-      });
+    const payload = await this.jwtService.verifyAsync(
+      token,
+      this.jwtConfiguration
+    );
+
     throwUnless(payload, new UnauthorizedException('Access token is invalid'));
 
     const user = await this.usersRepository.findOneBy({ id: payload.sub });
