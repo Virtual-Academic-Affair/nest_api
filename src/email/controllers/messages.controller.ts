@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Auth } from '@shared/authentication/decorators/auth.decorator';
 import { AuthType } from '@shared/authentication/enums/auth-type.enum';
@@ -11,6 +11,7 @@ import { Email } from '../entities/email.entity';
 import { MessagesService } from '../services/messages.service';
 import { QueryDto } from '../dto/messages/query.dto';
 import { UpdateDto } from '../dto/messages/update.dto';
+import { EmailSyncService } from '../services/email-sync.service';
 
 @ApiTags('Email - Messages')
 @Auth(AuthType.Bearer)
@@ -20,11 +21,19 @@ import { UpdateDto } from '../dto/messages/update.dto';
   only: [ResourceAction.FindAll, ResourceAction.FindOne, ResourceAction.Update],
 })
 export class MessagesController extends ResourceController<Email> {
-  constructor(private readonly messagesService: MessagesService) {
+  constructor(
+    private readonly messagesService: MessagesService,
+    private readonly emailSyncService: EmailSyncService
+  ) {
     super(messagesService);
   }
 
   protected getDtoClasses() {
     return { query: QueryDto, update: UpdateDto };
+  }
+
+  @Post('sync')
+  protected async sync() {
+    return await this.emailSyncService.sync();
   }
 }
