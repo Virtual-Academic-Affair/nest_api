@@ -29,15 +29,15 @@ export class EmailSyncService {
     private readonly settingService: SettingService,
     private readonly rabbitmqService: RabbitMQService,
     @InjectRepository(User)
-    private readonly userRepo: Repository<User>,
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Email)
-    private readonly emailRepo: Repository<Email>
+    private readonly emailRepository: Repository<Email>
   ) {}
 
   private async loadEmailPolicies() {
     const [admins, superEmailSetting, allowedDomainsSetting] =
       await Promise.all([
-        this.userRepo.find({
+        this.userRepository.find({
           where: { role: Role.Admin, isActive: true },
           select: ['email'],
         }),
@@ -117,7 +117,7 @@ export class EmailSyncService {
   }
 
   private async handleMessage(gmail: gmail_v1.Gmail, id: string) {
-    const exists = await this.emailRepo.findOne({
+    const exists = await this.emailRepository.findOne({
       where: { gmailMessageId: id },
     });
 
@@ -138,7 +138,7 @@ export class EmailSyncService {
       return;
     }
 
-    const email = await this.emailRepo.save({
+    const email = await this.emailRepository.save({
       gmailMessageId: id,
       headerMessageId: parsed.headers['message-id'],
       threadId: data.threadId,

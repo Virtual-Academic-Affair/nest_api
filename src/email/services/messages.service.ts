@@ -14,9 +14,9 @@ export class MessagesService extends ResourceService<Email> {
 
   protected orderableColumns = ['id', 'sentAt'];
 
-  constructor(@InjectRepository(Email) emailRepo: Repository<Email>) {
+  constructor(@InjectRepository(Email) emailRepository: Repository<Email>) {
     super();
-    this.repository = emailRepo;
+    this.repository = emailRepository;
   }
 
   protected applyCustomFilters(

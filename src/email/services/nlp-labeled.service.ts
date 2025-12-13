@@ -21,7 +21,7 @@ export class NlpLabeledService implements OnModuleInit {
     private readonly settingService: SettingService,
     private readonly googleapisService: GoogleapisService,
     @InjectRepository(Email)
-    private readonly emailRepo: Repository<Email>
+    private readonly emailRepository: Repository<Email>
   ) {}
 
   async onModuleInit() {
@@ -39,7 +39,7 @@ export class NlpLabeledService implements OnModuleInit {
     const { gmailMessageId, id: emailId } = payload.internal;
     const systemLabels = payload.labels;
 
-    const email = await this.emailRepo.findOne({
+    const email = await this.emailRepository.findOne({
       where: [{ gmailMessageId, systemLabels: IsNull(), id: emailId }],
     });
 
@@ -47,7 +47,7 @@ export class NlpLabeledService implements OnModuleInit {
       return;
     }
 
-    await this.emailRepo.update(email.id, { systemLabels });
+    await this.emailRepository.update(email.id, { systemLabels });
 
     const gmailLabels = await this.settingService.get<UpdateDto>(
       SettingKey.EmailLabels
