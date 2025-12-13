@@ -34,7 +34,6 @@ export class AccessTokenGuard implements CanActivate {
       token,
       this.jwtConfiguration
     );
-
     throwUnless(payload, new UnauthorizedException('Access token is invalid'));
 
     const user = await this.usersRepository.findOneBy({ id: payload.sub });
