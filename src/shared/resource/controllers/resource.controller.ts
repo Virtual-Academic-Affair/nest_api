@@ -11,7 +11,6 @@ import {
 import { ResourceService } from '../services/resource.service';
 import { ObjectLiteral } from 'typeorm';
 import { validateDto } from '@shared/resource/utils/validate-dto.util';
-import { ResourceQueryDto } from '@shared/resource/dtos/resource-query.dto';
 
 export abstract class ResourceController<T extends ObjectLiteral> {
   protected constructor(protected readonly service: ResourceService<T>) {}

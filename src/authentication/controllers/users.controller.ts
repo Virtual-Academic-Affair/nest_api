@@ -27,7 +27,7 @@ export class UsersController extends ResourceController<User> {
     return { query: QueryDto, update: UpdateDto };
   }
 
-  @Post('assign-role')
+  @Post('assignRole')
   assignRole(@Body() dto: AssignRoleDto) {
     return this.usersService.assignRole(dto);
   }

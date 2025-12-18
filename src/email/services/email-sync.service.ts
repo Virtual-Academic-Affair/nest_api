@@ -157,7 +157,9 @@ export class EmailSyncService {
 
     await this.rabbitmqService.publish(EmailRoutingKey.Ingested, {
       internal: { id: email.id, gmailMessageId: id },
-      subject: parsed.headers.subject,
+      subject: email.subject,
+      senderEmail: email.senderEmail,
+      senderName: email.senderName,
       content: htmlToText(parsed.textHtml ?? parsed.textPlain ?? '', {
         wordwrap: false,
       }),

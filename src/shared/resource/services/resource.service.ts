@@ -18,7 +18,7 @@ export abstract class ResourceService<T extends ObjectLiteral> {
     const page = Math.max(queryDto.page || 1);
     const limit = Math.min(Math.max(1, queryDto.limit), 20);
 
-    const { keyword, order_col = 'id', order_dir = 'ASC' } = queryDto;
+    const { keyword, orderCol = 'id', orderDir = 'ASC' } = queryDto;
     const skip = (page - 1) * Math.min(limit, 20);
 
     const queryBuilder = this.repository.createQueryBuilder(this.entityName);
@@ -34,10 +34,10 @@ export abstract class ResourceService<T extends ObjectLiteral> {
 
     this.applyCustomFilters(queryBuilder, queryDto);
 
-    const orderColumn = this.orderableColumns.includes(order_col)
-      ? order_col
+    const orderColumn = this.orderableColumns.includes(orderCol)
+      ? orderCol
       : 'id';
-    const orderDirection = order_dir === 'DESC' ? 'DESC' : 'ASC';
+    const orderDirection = orderDir === 'DESC' ? 'DESC' : 'ASC';
 
     queryBuilder
       .orderBy(`${this.entityName}.${orderColumn}`, orderDirection)
